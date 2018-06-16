@@ -13,12 +13,12 @@ namespace MQTTnet.Diagnostics
 
         public event EventHandler<MqttNetLogMessagePublishedEventArgs> LogMessagePublished;
 
-        public IMqttNetChildLogger CreateChildLogger(string source = null)
+        public virtual IMqttNetChildLogger CreateChildLogger(string source = null)
         {
             return new MqttNetChildLogger(this, source);
         }
 
-        public void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception)
+        public virtual void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception)
         {
             var hasLocalListeners = LogMessagePublished != null;
             var hasGlobalListeners = MqttNetGlobalLogger.HasListeners;
