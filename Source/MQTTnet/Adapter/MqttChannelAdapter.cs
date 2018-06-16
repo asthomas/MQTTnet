@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -113,7 +112,7 @@ namespace MQTTnet.Adapter
             }
         }
 
-        private Task SendPacketAsync(TimeSpan timeout, CancellationToken cancellationToken, MqttBasePacket packet)
+        public Task SendPacketAsync(TimeSpan timeout, MqttBasePacket packet, CancellationToken cancellationToken)
         {
             return ExecuteAndWrapExceptionAsync(() =>
             {

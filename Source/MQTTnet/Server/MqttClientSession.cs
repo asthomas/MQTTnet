@@ -341,7 +341,7 @@ namespace MQTTnet.Server
 
             if (packet is MqttPingReqPacket)
             {
-                return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { new MqttPingRespPacket() }, cancellationToken);
+                return adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, new MqttPingRespPacket(), cancellationToken);
             }
 
             if (packet is MqttPubRelPacket pubRelPacket)
@@ -356,7 +356,7 @@ namespace MQTTnet.Server
                     PacketIdentifier = pubRecPacket.PacketIdentifier
                 };
 
-                return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { responsePacket }, cancellationToken);
+                return adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, responsePacket, cancellationToken);
             }
 
             if (packet is MqttPubAckPacket || packet is MqttPubCompPacket)
@@ -463,7 +463,7 @@ namespace MQTTnet.Server
         private async Task HandleIncomingSubscribePacketAsync(IMqttChannelAdapter adapter, MqttSubscribePacket subscribePacket, CancellationToken cancellationToken)
         {
             var subscribeResult = _subscriptionsManager.Subscribe(subscribePacket);
-            await adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { subscribeResult.ResponsePacket }, cancellationToken).ConfigureAwait(false);
+            await adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, subscribeResult.ResponsePacket, cancellationToken).ConfigureAwait(false);
 
             if (subscribeResult.CloseConnection)
             {
@@ -491,7 +491,7 @@ namespace MQTTnet.Server
         private Task HandleIncomingUnsubscribePacketAsync(IMqttChannelAdapter adapter, MqttUnsubscribePacket unsubscribePacket, CancellationToken cancellationToken)
         {
             var unsubscribeResult = _subscriptionsManager.Unsubscribe(unsubscribePacket);
-            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { unsubscribeResult }, cancellationToken);
+            return adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, unsubscribeResult, cancellationToken);
         }
 
         private void HandleIncomingUnsubscribePacket(IMqttChannelAdapter adapter, MqttUnsubscribePacket unsubscribePacket)
@@ -559,7 +559,7 @@ namespace MQTTnet.Server
             _sessionsManager.StartDispatchApplicationMessage(this, applicationMessage);
 
             var response = new MqttPubAckPacket { PacketIdentifier = publishPacket.PacketIdentifier };
-            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+            return adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, response, cancellationToken);
         }
 
         private void HandleIncomingPublishPacketWithQoS1Sync(IMqttChannelAdapter adapter, MqttApplicationMessage applicationMessage, MqttPublishPacket publishPacket)
@@ -576,7 +576,7 @@ namespace MQTTnet.Server
             _sessionsManager.StartDispatchApplicationMessage(this, applicationMessage);
 
             var response = new MqttPubRecPacket { PacketIdentifier = publishPacket.PacketIdentifier };
-            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+            return adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, response, cancellationToken);
         }
 
         private void HandleIncomingPublishPacketWithQoS2Sync(IMqttChannelAdapter adapter, MqttApplicationMessage applicationMessage, MqttPublishPacket publishPacket)
@@ -591,7 +591,7 @@ namespace MQTTnet.Server
         private Task HandleIncomingPubRelPacketAsync(IMqttChannelAdapter adapter, MqttPubRelPacket pubRelPacket, CancellationToken cancellationToken)
         {
             var response = new MqttPubCompPacket { PacketIdentifier = pubRelPacket.PacketIdentifier };
-            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+            return adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, response, cancellationToken);
         }
 
         private void HandleIncomingPubRelPacket(IMqttChannelAdapter adapter, MqttPubRelPacket pubRelPacket)

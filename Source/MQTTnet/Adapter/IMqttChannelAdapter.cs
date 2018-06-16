@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MQTTnet.Packets;
@@ -25,11 +24,11 @@ namespace MQTTnet.Adapter
 
         void Disconnect(TimeSpan timeout);
 
-        Task SendPacketsAsync(TimeSpan timeout, IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken);
+        Task SendPacketAsync(TimeSpan timeout, MqttBasePacket packet, CancellationToken cancellationToken);
 
         Task<MqttBasePacket> ReceivePacketAsync(TimeSpan timeout, CancellationToken cancellationToken);
 
-        void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets);
+        void SendPacket(TimeSpan timeout, MqttBasePacket packet);
 
         MqttBasePacket ReceivePacket(TimeSpan timeout);
     }
