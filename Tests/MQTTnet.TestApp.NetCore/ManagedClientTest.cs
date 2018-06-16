@@ -78,7 +78,7 @@ namespace MQTTnet.TestApp.NetCore
 
             public Task SaveQueuedMessagesAsync(IList<ManagedMqttApplicationMessage> messages)
             {
-                File.WriteAllText(Filename, JsonConvert.SerializeObject(messages));
+                SaveQueuedMessages(messages);
                 return Task.FromResult(0);
             }
 
@@ -96,6 +96,11 @@ namespace MQTTnet.TestApp.NetCore
                 }
 
                 return Task.FromResult(retainedMessages);
+            }
+
+            public void SaveQueuedMessages(IList<ManagedMqttApplicationMessage> messages)
+            {
+                File.WriteAllText(Filename, JsonConvert.SerializeObject(messages));
             }
         }
     }

@@ -35,6 +35,15 @@ namespace MQTTnet.Extensions.ManagedClient
             }
         }
 
+        public void Add(ManagedMqttApplicationMessage applicationMessage)
+        {
+            using (_messagesLock.LockAsync(CancellationToken.None).Result)
+            {
+                _messages.Add(applicationMessage);
+                Save();
+            }
+        }
+
         public async Task RemoveAsync(ManagedMqttApplicationMessage applicationMessage)
         {
             using (await _messagesLock.LockAsync(CancellationToken.None).ConfigureAwait(false))
@@ -53,6 +62,11 @@ namespace MQTTnet.Extensions.ManagedClient
         private Task SaveAsync()
         {
             return _storage.SaveQueuedMessagesAsync(_messages);
+        }
+
+        private void Save()
+        {
+            _storage.SaveQueuedMessages(_messages);
         }
     }
 }

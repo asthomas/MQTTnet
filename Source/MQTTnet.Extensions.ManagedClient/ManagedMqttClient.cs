@@ -131,8 +131,7 @@ namespace MQTTnet.Extensions.ManagedClient
 
             if (_storageManager != null)
             {
-                // BUG: This is async
-                _storageManager.AddAsync(applicationMessage);
+                _storageManager.Add(applicationMessage);
             }
             _messageQueue.Add(applicationMessage);
         }

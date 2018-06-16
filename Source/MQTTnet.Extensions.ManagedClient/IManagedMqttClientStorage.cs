@@ -7,6 +7,8 @@ namespace MQTTnet.Extensions.ManagedClient
     {
         Task SaveQueuedMessagesAsync(IList<ManagedMqttApplicationMessage> messages);
 
+        void SaveQueuedMessages(IList<ManagedMqttApplicationMessage> messages);
+
         Task<IList<ManagedMqttApplicationMessage>> LoadQueuedMessagesAsync();
     }
 }
