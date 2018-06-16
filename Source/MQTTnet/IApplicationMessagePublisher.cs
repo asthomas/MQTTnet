@@ -6,5 +6,6 @@ namespace MQTTnet
     public interface IApplicationMessagePublisher
     {
         Task PublishAsync(IEnumerable<MqttApplicationMessage> applicationMessages);
+        void Publish(IEnumerable<MqttApplicationMessage> applicationMessages);
     }
 }

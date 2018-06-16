@@ -19,10 +19,18 @@ namespace MQTTnet.Adapter
 
         Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken);
 
+        void Connect(TimeSpan timeout);
+
         Task DisconnectAsync(TimeSpan timeout, CancellationToken cancellationToken);
+
+        void Disconnect(TimeSpan timeout);
 
         Task SendPacketsAsync(TimeSpan timeout, IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken);
 
         Task<MqttBasePacket> ReceivePacketAsync(TimeSpan timeout, CancellationToken cancellationToken);
+
+        void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets);
+
+        MqttBasePacket ReceivePacket(TimeSpan timeout);
     }
 }

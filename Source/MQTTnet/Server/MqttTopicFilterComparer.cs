@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace MQTTnet.Server
 {
@@ -7,6 +10,29 @@ namespace MQTTnet.Server
         private const char LevelSeparator = '/';
         private const char MultiLevelWildcard = '#';
         private const char SingleLevelWildcard = '+';
+
+        private static Dictionary<string, string> regexMap = new Dictionary<string, string>()
+        {
+            { "/+", "/[^/]" },
+            { "/#", "/.*" }
+        };
+
+        private static Regex FilterRegex = new Regex(String.Join("|", regexMap.Keys.Select(k => Regex.Escape(k))));
+
+        public static bool IsMatchX(string topic, string filter)
+        {
+            //filter = Regex.Replace(filter, "/\\+(/|$)", "/[^/]+$1");
+            //filter = Regex.Replace(filter, "/#$", "/.*");
+            //return Regex.IsMatch(topic, filter);
+
+            filter = FilterRegex.Replace(filter, m => regexMap[m.Value]);
+            return Regex.IsMatch(topic, filter);
+        }
+
+        public static bool IsMatchY(string topic, string filter)
+        {
+            return topic == filter;
+        }
 
         public static bool IsMatch(string topic, string filter)
         {

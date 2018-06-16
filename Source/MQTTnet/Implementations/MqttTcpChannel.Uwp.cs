@@ -70,10 +70,43 @@ namespace MQTTnet.Implementations
             CreateStreams();
         }
 
+        public void Connect()
+        {
+            if (_socket == null)
+            {
+                _socket = new StreamSocket();
+                _socket.Control.NoDelay = true;
+                _socket.Control.KeepAlive = true;
+            }
+
+            if (!_options.TlsOptions.UseTls)
+            {
+                _socket.ConnectAsync(new HostName(_options.Server), _options.GetPort().ToString()).AsTask().Wait();
+            }
+            else
+            {
+                _socket.Control.ClientCertificate = LoadCertificate(_options);
+
+                foreach (var ignorableChainValidationResult in ResolveIgnorableServerCertificateErrors())
+                {
+                    _socket.Control.IgnorableServerCertificateErrors.Add(ignorableChainValidationResult);
+                }
+
+                _socket.ConnectAsync(new HostName(_options.Server), _options.GetPort().ToString(), SocketProtectionLevel.Tls12).AsTask().Wait();
+            }
+
+            CreateStreams();
+        }
+
         public Task DisconnectAsync()
         {
             Dispose();
             return Task.FromResult(0);
+        }
+
+        public void Disconnect()
+        {
+            Dispose();
         }
 
         public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -81,10 +114,21 @@ namespace MQTTnet.Implementations
             return _readStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+        public int Read(byte[] buffer, int offset, int count)
+        {
+            return _readStream.Read(buffer, offset, count);
+        }
+
         public async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             await _writeStream.WriteAsync(buffer, offset, count, cancellationToken);
             await _writeStream.FlushAsync(cancellationToken);
+        }
+
+        public void Write(byte[] buffer, int offset, int count)
+        {
+            _writeStream.Write(buffer, offset, count);
+            _writeStream.Flush();
         }
 
         public void Dispose()

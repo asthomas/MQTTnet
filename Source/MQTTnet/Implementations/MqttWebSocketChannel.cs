@@ -79,6 +79,11 @@ namespace MQTTnet.Implementations
             _webSocket = clientWebSocket;
         }
 
+        public void Connect()
+        {
+            ConnectAsync(CancellationToken.None).Wait();
+        }
+
         public async Task DisconnectAsync()
         {
             if (_webSocket == null)
@@ -94,9 +99,20 @@ namespace MQTTnet.Implementations
             Dispose();
         }
 
+        public void Disconnect()
+        {
+            DisconnectAsync().Wait();
+        }
+
         public async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             var response = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
+            return response.Count;
+        }
+
+        public int Read(byte[] buffer, int offset, int count)
+        {
+            WebSocketReceiveResult response = _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), CancellationToken.None).Result;
             return response.Count;
         }
 
@@ -114,6 +130,11 @@ namespace MQTTnet.Implementations
             {
                 _sendLock.Release();
             }
+        }
+
+        public void Write(byte[] buffer, int offset, int count)
+        {
+            _webSocket.SendAsync(new ArraySegment<byte>(buffer, offset, count), WebSocketMessageType.Binary, true, CancellationToken.None).Wait();
         }
 
         public void Dispose()

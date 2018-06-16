@@ -4,12 +4,18 @@
     {
         private readonly object _syncRoot = new object();
         private ushort _value;
+        private System.Random Randomizer = new System.Random();
+
+        public MqttPacketIdentifierProvider()
+        {
+            Reset();
+        }
 
         public void Reset()
         {
             lock (_syncRoot)
             {
-                _value = 0;
+                _value = (ushort)(Randomizer.Next(0, ushort.MaxValue));
             }
         }
 

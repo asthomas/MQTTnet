@@ -69,10 +69,38 @@ namespace MQTTnet.Implementations
             CreateStream(sslStream);
         }
 
+        public void Connect()
+        {
+            if (_socket == null)
+            {
+                _socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            }
+
+#if NET452 || NET461
+            Task.Factory.FromAsync(_socket.BeginConnect, _socket.EndConnect, _options.Server, _options.GetPort(), null).Wait();
+#else
+            _socket.Connect(_options.Server, _options.GetPort());
+#endif
+
+            SslStream sslStream = null;
+            if (_options.TlsOptions.UseTls)
+            {
+                sslStream = new SslStream(new NetworkStream(_socket, true), false, InternalUserCertificateValidationCallback);
+                sslStream.AuthenticateAsClientAsync(_options.Server, LoadCertificates(), SslProtocols.Tls12, _options.TlsOptions.IgnoreCertificateRevocationErrors).Wait();
+            }
+
+            CreateStream(sslStream);
+        }
+
         public Task DisconnectAsync()
         {
             Dispose();
             return Task.FromResult(0);
+        }
+
+        public void Disconnect()
+        {
+            Dispose();
         }
 
         public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -80,9 +108,19 @@ namespace MQTTnet.Implementations
             return _stream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+        public int Read(byte[] buffer, int offset, int count)
+        {
+            return _stream.Read(buffer, offset, count);
+        }
+
         public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public void Write(byte[] buffer, int offset, int count)
+        {
+            _stream.Write(buffer, offset, count);
         }
 
         public void Dispose()

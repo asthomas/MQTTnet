@@ -23,5 +23,14 @@ namespace MQTTnet.Server
 
         Task StartAsync(IMqttServerOptions options);
         Task StopAsync();
+
+        IList<IMqttClientSessionStatus> GetClientSessionsStatus();
+
+        void Subscribe(string clientId, IList<TopicFilter> topicFilters);
+        void Unsubscribe(string clientId, IList<string> topicFilters);
+
+        void Start(IMqttServerOptions options);
+        void Stop();
+
     }
 }
