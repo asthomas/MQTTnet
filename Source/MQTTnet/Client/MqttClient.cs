@@ -260,55 +260,45 @@ namespace MQTTnet.Client
             }
         }
 
-        public void Publish(IEnumerable<MqttApplicationMessage> applicationMessages)
+        public void Publish(MqttApplicationMessage applicationMessage)
         {
             ThrowIfNotConnected();
 
-            var publishPackets = applicationMessages.Select(m => m.ToPublishPacket());
-            var packetGroups = publishPackets.GroupBy(p => p.QualityOfServiceLevel).OrderBy(g => g.Key);
+            var publishPacket = applicationMessage.ToPublishPacket();
 
-            foreach (var qosGroup in packetGroups)
+            switch (applicationMessage.QualityOfServiceLevel)
             {
-                switch (qosGroup.Key)
-                {
-                    case MqttQualityOfServiceLevel.AtMostOnce:
-                        {
-                            // No packet identifier is used for QoS 0 [3.3.2.2 Packet Identifier]
-                            Send(qosGroup);
-                            break;
-                        }
-                    case MqttQualityOfServiceLevel.AtLeastOnce:
-                        {
-                            foreach (var publishPacket in qosGroup)
-                            {
-                                publishPacket.PacketIdentifier = _packetIdentifierProvider.GetNewPacketIdentifier();
-                                SendAndReceive<MqttPubAckPacket>(publishPacket);
-                            }
+                case MqttQualityOfServiceLevel.AtMostOnce:
+                    {
+                        // No packet identifier is used for QoS 0 [3.3.2.2 Packet Identifier]
+                        Send(publishPacket);
+                        break;
+                    }
+                case MqttQualityOfServiceLevel.AtLeastOnce:
+                    {
+                        publishPacket.PacketIdentifier = _packetIdentifierProvider.GetNewPacketIdentifier();
+                        SendAndReceive<MqttPubAckPacket>(publishPacket);
 
-                            break;
-                        }
-                    case MqttQualityOfServiceLevel.ExactlyOnce:
+                        break;
+                    }
+                case MqttQualityOfServiceLevel.ExactlyOnce:
+                    {
+                        publishPacket.PacketIdentifier = _packetIdentifierProvider.GetNewPacketIdentifier();
+
+                        var pubRecPacket = SendAndReceive<MqttPubRecPacket>(publishPacket);
+                        var pubRelPacket = new MqttPubRelPacket
                         {
-                            foreach (var publishPacket in qosGroup)
-                            {
-                                publishPacket.PacketIdentifier = _packetIdentifierProvider.GetNewPacketIdentifier();
+                            PacketIdentifier = pubRecPacket.PacketIdentifier
+                        };
 
-                                var pubRecPacket = SendAndReceive<MqttPubRecPacket>(publishPacket);
-                                var pubRelPacket = new MqttPubRelPacket
-                                {
-                                    PacketIdentifier = pubRecPacket.PacketIdentifier
-                                };
+                        SendAndReceive<MqttPubCompPacket>(pubRelPacket);
 
-                                SendAndReceive<MqttPubCompPacket>(pubRelPacket);
-                            }
-
-                            break;
-                        }
-                    default:
-                        {
-                            throw new InvalidOperationException();
-                        }
-                }
+                        break;
+                    }
+                default:
+                    {
+                        throw new InvalidOperationException();
+                    }
             }
         }
 
@@ -495,22 +485,12 @@ namespace MQTTnet.Client
 
         private void Send(MqttBasePacket packet, CancellationToken cancellationToken)
         {
-            Send(new[] { packet }, cancellationToken);
-        }
-
-        private void Send(IEnumerable<MqttBasePacket> packets)
-        {
-            Send(packets, _cancellationTokenSource.Token);
-        }
-
-        private void Send(IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken)
-        {
             if (cancellationToken.IsCancellationRequested)
             {
                 throw new TaskCanceledException();
             }
 
-            _adapter.SendPackets(_options.CommunicationTimeout, packets);
+            _adapter.SendPacket(_options.CommunicationTimeout, packet);
         }
 
         private Task SendAsync(MqttBasePacket packet, CancellationToken cancellationToken)
@@ -809,7 +789,7 @@ namespace MQTTnet.Client
                 PacketWaiters.Add(identifier, semaphore);
             }
 
-            _adapter.SendPackets(_options.CommunicationTimeout, new[] { requestPacket });
+            _adapter.SendPacket(_options.CommunicationTimeout, requestPacket);
 
             bool success = semaphore.Wait(Convert.ToInt32(communicationTimeout.TotalMilliseconds));
             MqttBasePacket packet = null;

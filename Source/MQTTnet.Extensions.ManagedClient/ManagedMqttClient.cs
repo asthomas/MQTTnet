@@ -118,26 +118,23 @@ namespace MQTTnet.Extensions.ManagedClient
             _messageQueue.Add(applicationMessage);
         }
 
-        public void Publish(IEnumerable<MqttApplicationMessage> applicationMessages)
+        public void Publish(MqttApplicationMessage applicationMessage)
         {
-            if (applicationMessages == null) throw new ArgumentNullException(nameof(applicationMessages));
+            if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
 
-            Publish(applicationMessages.Select(m =>
-                new ManagedMqttApplicationMessageBuilder().WithApplicationMessage(m).Build()));
+            Publish(new ManagedMqttApplicationMessageBuilder().WithApplicationMessage(applicationMessage).Build());
         }
 
-        public void Publish(IEnumerable<ManagedMqttApplicationMessage> applicationMessages)
+        public void Publish(ManagedMqttApplicationMessage applicationMessage)
         {
-            if (applicationMessages == null) throw new ArgumentNullException(nameof(applicationMessages));
+            if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
 
-            foreach (var applicationMessage in applicationMessages)
+            if (_storageManager != null)
             {
-                if (_storageManager != null)
-                {
-                    _storageManager.AddAsync(applicationMessage);
-                }
-                _messageQueue.Add(applicationMessage);
+                // BUG: This is async
+                _storageManager.AddAsync(applicationMessage);
             }
+            _messageQueue.Add(applicationMessage);
         }
 
         public async Task SubscribeAsync(IEnumerable<TopicFilter> topicFilters)

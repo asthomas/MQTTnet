@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -90,11 +91,11 @@ namespace MQTTnet.Adapter
 
             foreach (var packet in packets)
             {
-                await SendPacketAsync(timeout, cancellationToken, packet).ConfigureAwait(false);
+                await SendPacketAsync(timeout, packet, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        private void SendPacket(TimeSpan timeout, MqttBasePacket packet)
+        public void SendPacket(TimeSpan timeout, MqttBasePacket packet)
         {
             try
             {

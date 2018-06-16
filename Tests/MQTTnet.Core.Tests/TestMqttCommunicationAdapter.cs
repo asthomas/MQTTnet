@@ -96,7 +96,7 @@ namespace MQTTnet.Core.Tests
             }
         }
 
-        public void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets)
+        public void SendPacket(TimeSpan timeout, MqttBasePacket packets)
         {
             throw new NotImplementedException();
         }

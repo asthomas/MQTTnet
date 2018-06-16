@@ -209,7 +209,7 @@ namespace MQTTnet.Server
                     return;
                 }
 
-                adapter.SendPackets(_options.DefaultCommunicationTimeout, new[] { packet });
+                adapter.SendPacket(_options.DefaultCommunicationTimeout, packet);
 
                 _logger.Verbose("Enqueued packet sent (ClientId: {0}).", _clientSession.ClientId);
             }

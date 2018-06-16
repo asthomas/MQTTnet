@@ -148,13 +148,11 @@ namespace MQTTnet.Server
                 var connectReturnCode = ValidateConnection(connectPacket);
                 if (connectReturnCode != MqttConnectReturnCode.ConnectionAccepted)
                 {
-                    clientAdapter.SendPackets(_options.DefaultCommunicationTimeout, new[]
-                    {
-                        new MqttConnAckPacket
+                    clientAdapter.SendPacket(_options.DefaultCommunicationTimeout, new MqttConnAckPacket
                         {
                             ConnectReturnCode = connectReturnCode
                         }
-                    });
+                    );
 
                     return;
                 }
@@ -162,14 +160,12 @@ namespace MQTTnet.Server
                 var result = PrepareClientSessionAsync(connectPacket).Result;
                 var clientSession = result.Session;
 
-                clientAdapter.SendPackets(_options.DefaultCommunicationTimeout, new[]
-                {
-                    new MqttConnAckPacket
+                clientAdapter.SendPacket(_options.DefaultCommunicationTimeout, new MqttConnAckPacket
                     {
                         ConnectReturnCode = connectReturnCode,
                         IsSessionPresent = result.IsExistingSession
                     }
-                });
+                );
 
                 Server.OnClientConnected(clientId);
 
