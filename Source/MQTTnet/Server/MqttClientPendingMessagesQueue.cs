@@ -9,12 +9,14 @@ using MQTTnet.Internal;
 using MQTTnet.Packets;
 using MQTTnet.Protocol;
 
+using SemaphoreType = System.Threading.Semaphore;
+
 namespace MQTTnet.Server
 {
     public class MqttClientPendingMessagesQueue : IDisposable
     {
         private readonly AsyncAutoResetEvent _queueAutoResetEvent = new AsyncAutoResetEvent();
-        private readonly SemaphoreSlim _queueSemaphore = new SemaphoreSlim(0, int.MaxValue);
+        private readonly SemaphoreType _queueSemaphore = new SemaphoreType(0, int.MaxValue);
         private readonly IMqttServerOptions _options;
         private readonly MqttClientSession _clientSession;
         private readonly IMqttNetChildLogger _logger;
@@ -195,7 +197,7 @@ namespace MQTTnet.Server
             {
                 if (_queue.IsEmpty)
                 {
-                    _queueSemaphore.Wait(100);
+                    _queueSemaphore.WaitOne(100);
                     //_queueAutoResetEvent.WaitOneAsync(cancellationToken).Wait();
                 }
 

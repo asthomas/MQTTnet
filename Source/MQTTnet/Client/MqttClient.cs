@@ -11,6 +11,8 @@ using MQTTnet.Internal;
 using MQTTnet.Packets;
 using MQTTnet.Protocol;
 
+using SemaphoreType = System.Threading.Semaphore;
+
 namespace MQTTnet.Client
 {
     public class MqttClient : IMqttClient
@@ -732,7 +734,7 @@ namespace MQTTnet.Client
             return Task.FromResult(0);
         }
 
-        Dictionary<int, SemaphoreSlim> PacketWaiters = new Dictionary<int, SemaphoreSlim>();
+        Dictionary<int, SemaphoreType> PacketWaiters = new Dictionary<int, SemaphoreType>();
         Dictionary<int, MqttBasePacket> PacketWaiterResults = new Dictionary<int, MqttBasePacket>();
 
         private void ProcessReceivedPacket(MqttBasePacket packet)
@@ -780,7 +782,7 @@ namespace MQTTnet.Client
                 identifier = packetWithIdentifier.PacketIdentifier.Value;
             }
 
-            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            SemaphoreType semaphore = new SemaphoreType(0, int.MaxValue);
             lock (PacketWaiters)
             {
                 if (PacketWaiters.ContainsKey(identifier))
@@ -791,7 +793,7 @@ namespace MQTTnet.Client
 
             _adapter.SendPacket(_options.CommunicationTimeout, requestPacket);
 
-            bool success = semaphore.Wait(Convert.ToInt32(communicationTimeout.TotalMilliseconds));
+            bool success = semaphore.WaitOne(Convert.ToInt32(communicationTimeout.TotalMilliseconds));
             MqttBasePacket packet = null;
 
             lock (PacketWaiters)
