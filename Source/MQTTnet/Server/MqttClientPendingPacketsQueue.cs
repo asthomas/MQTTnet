@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MQTTnet.Adapter;
@@ -10,11 +10,13 @@ using MQTTnet.Packets;
 using MQTTnet.Protocol;
 
 using SemaphoreType = System.Threading.Semaphore;
+using System.Runtime.InteropServices;
 
 namespace MQTTnet.Server
 {
-    public class MqttClientPendingMessagesQueue : IDisposable
+    public class MqttClientPendingPacketsQueue : IDisposable
     {
+        private readonly Queue<MqttBasePacket> _queue = new Queue<MqttBasePacket>();
         private readonly AsyncAutoResetEvent _queueAutoResetEvent = new AsyncAutoResetEvent();
         private readonly SemaphoreType _queueSemaphore = new SemaphoreType(0, int.MaxValue);
         private readonly IMqttServerOptions _options;
@@ -22,18 +24,25 @@ namespace MQTTnet.Server
         private readonly IMqttNetChildLogger _logger;
         public bool IsSync;
 
-        private ConcurrentQueue<MqttBasePacket> _queue = new ConcurrentQueue<MqttBasePacket>();
-
-        public MqttClientPendingMessagesQueue(IMqttServerOptions options, MqttClientSession clientSession, IMqttNetChildLogger logger)
+        public MqttClientPendingPacketsQueue(IMqttServerOptions options, MqttClientSession clientSession, IMqttNetChildLogger logger)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _clientSession = clientSession ?? throw new ArgumentNullException(nameof(clientSession));
 
-            _logger = logger.CreateChildLogger(nameof(MqttClientPendingMessagesQueue));
+            _logger = logger.CreateChildLogger(nameof(MqttClientPendingPacketsQueue));
         }
 
-        public int Count => _queue.Count;
+        public int Count
+        {
+            get
+            {
+                lock (_queue)
+                {
+                    return _queue.Count;
+                }
+            }
+        }
 
         public void Start(IMqttChannelAdapter adapter, CancellationToken cancellationToken)
         {
@@ -53,25 +62,29 @@ namespace MQTTnet.Server
                 Task.Run(() => SendQueuedPacketsAsync(adapter, cancellationToken), cancellationToken);
             }
         }
-        
+
         public void Enqueue(MqttBasePacket packet)
         {
             if (packet == null) throw new ArgumentNullException(nameof(packet));
 
-            if (_queue.Count >= _options.MaxPendingMessagesPerClient)
+            lock (_queue)
             {
-                if (_options.PendingMessagesOverflowStrategy == MqttPendingMessagesOverflowStrategy.DropNewMessage)
+                if (_queue.Count >= _options.MaxPendingMessagesPerClient)
                 {
-                    return;
-                }
+                    if (_options.PendingMessagesOverflowStrategy == MqttPendingMessagesOverflowStrategy.DropNewMessage)
+                    {
+                        return;
+                    }
 
-                if (_options.PendingMessagesOverflowStrategy == MqttPendingMessagesOverflowStrategy.DropOldestQueuedMessage)
-                {
-                    _queue.TryDequeue(out _);
+                    if (_options.PendingMessagesOverflowStrategy == MqttPendingMessagesOverflowStrategy.DropOldestQueuedMessage)
+                    {
+                        _queue.Dequeue();
+                    }
                 }
+                
+                _queue.Enqueue(packet);
             }
 
-            _queue.Enqueue(packet);
             if (IsSync)
             {
                 _queueSemaphore.Release();
@@ -86,13 +99,14 @@ namespace MQTTnet.Server
 
         public void Clear()
         {
-            var newQueue = new ConcurrentQueue<MqttBasePacket>();
-            Interlocked.Exchange(ref _queue, newQueue);
+            lock (_queue)
+            {
+                _queue.Clear();
+            }
         }
 
         public void Dispose()
         {
-            
         }
 
         private async Task SendQueuedPacketsAsync(IMqttChannelAdapter adapter, CancellationToken cancellationToken)
@@ -118,13 +132,17 @@ namespace MQTTnet.Server
             MqttBasePacket packet = null;
             try
             {
-                if (_queue.IsEmpty)
+                lock (_queue)
                 {
-                    await _queueAutoResetEvent.WaitOneAsync(cancellationToken).ConfigureAwait(false);
+                    if (_queue.Count > 0)
+                    {
+                        packet = _queue.Dequeue();
+                    }
                 }
 
-                if (!_queue.TryDequeue(out packet))
+                if (packet == null)
                 {
+                    await _queueAutoResetEvent.WaitOneAsync(cancellationToken).ConfigureAwait(false);
                     return;
                 }
 
@@ -133,7 +151,7 @@ namespace MQTTnet.Server
                     return;
                 }
 
-                await adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, packet, cancellationToken).ConfigureAwait(false);
+                adapter.SendPacketAsync(packet, cancellationToken).GetAwaiter().GetResult();
 
                 _logger.Verbose("Enqueued packet sent (ClientId: {0}).", _clientSession.ClientId);
             }
@@ -195,15 +213,28 @@ namespace MQTTnet.Server
             MqttBasePacket packet = null;
             try
             {
-                if (_queue.IsEmpty)
+                lock (_queue)
                 {
-                    _queueSemaphore.WaitOne(100);
-                    //_queueAutoResetEvent.WaitOneAsync(cancellationToken).Wait();
+                    if (_queue.Count > 0)
+                    {
+                        packet = _queue.Dequeue();
+                    }
                 }
 
-                if (!_queue.TryDequeue(out packet))
+                if (packet == null)
                 {
-                    return;
+                    _queueSemaphore.WaitOne(100);
+                    lock (_queue)
+                    {
+                        if (_queue.Count > 0)
+                        {
+                            packet = _queue.Dequeue();
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
                 }
 
                 if (cancellationToken.IsCancellationRequested)
@@ -211,7 +242,7 @@ namespace MQTTnet.Server
                     return;
                 }
 
-                adapter.SendPacket(_options.DefaultCommunicationTimeout, packet);
+                adapter.SendPacket(packet);
 
                 _logger.Verbose("Enqueued packet sent (ClientId: {0}).", _clientSession.ClientId);
             }

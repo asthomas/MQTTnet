@@ -24,11 +24,11 @@ namespace MQTTnet.Adapter
 
         void Disconnect(TimeSpan timeout);
 
-        Task SendPacketAsync(TimeSpan timeout, MqttBasePacket packet, CancellationToken cancellationToken);
+        Task SendPacketAsync(MqttBasePacket packet, CancellationToken cancellationToken);
 
         Task<MqttBasePacket> ReceivePacketAsync(TimeSpan timeout, CancellationToken cancellationToken);
 
-        void SendPacket(TimeSpan timeout, MqttBasePacket packet);
+        void SendPacket(MqttBasePacket packet);
 
         MqttBasePacket ReceivePacket(TimeSpan timeout);
     }

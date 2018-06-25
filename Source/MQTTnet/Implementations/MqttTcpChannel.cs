@@ -1,4 +1,4 @@
-#if NET452 || NET461 || NETSTANDARD1_3 || NETSTANDARD2_0
+#if !WINDOWS_UWP
 using System;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -105,22 +105,35 @@ namespace MQTTnet.Implementations
 
         public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            //System.Diagnostics.Debug.WriteLine("Reading async");
             return _stream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         public int Read(byte[] buffer, int offset, int count)
         {
-            return _stream.Read(buffer, offset, count);
+            int nbytes = 0;
+            lock (_stream)
+            {
+                nbytes = _stream.Read(buffer, offset, count);
+            }
+#if NET452 || NET461
+            //System.Diagnostics.Debug.WriteLine(string.Format("Read {0} bytes in thread {1}", nbytes, System.Threading.Thread.CurrentThread.ManagedThreadId));
+#endif
+            return nbytes;
         }
 
         public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            //System.Diagnostics.Debug.WriteLine("Writing async");
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public void Write(byte[] buffer, int offset, int count)
         {
             _stream.Write(buffer, offset, count);
+#if NET452 || NET461
+            //System.Diagnostics.Debug.WriteLine(string.Format("Write {0} bytes in thread {1}", count, System.Threading.Thread.CurrentThread.ManagedThreadId));
+#endif
         }
 
         public void Dispose()
@@ -192,6 +205,11 @@ namespace MQTTnet.Implementations
             else
             {
                 _stream = new NetworkStream(_socket, true);
+            }
+            if (_clientOptions != null)
+            {
+                _stream.WriteTimeout = Convert.ToInt32(_clientOptions.CommunicationTimeout.TotalMilliseconds);
+                _stream.ReadTimeout = Convert.ToInt32(_clientOptions.CommunicationTimeout.TotalMilliseconds);
             }
         }
 
