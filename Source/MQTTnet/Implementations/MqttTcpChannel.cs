@@ -69,71 +69,20 @@ namespace MQTTnet.Implementations
             CreateStream(sslStream);
         }
 
-        public void Connect()
-        {
-            if (_socket == null)
-            {
-                _socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-            }
-
-#if NET452 || NET461
-            Task.Factory.FromAsync(_socket.BeginConnect, _socket.EndConnect, _options.Server, _options.GetPort(), null).Wait();
-#else
-            _socket.Connect(_options.Server, _options.GetPort());
-#endif
-
-            SslStream sslStream = null;
-            if (_options.TlsOptions.UseTls)
-            {
-                sslStream = new SslStream(new NetworkStream(_socket, true), false, InternalUserCertificateValidationCallback);
-                sslStream.AuthenticateAsClientAsync(_options.Server, LoadCertificates(), SslProtocols.Tls12, _options.TlsOptions.IgnoreCertificateRevocationErrors).Wait();
-            }
-
-            CreateStream(sslStream);
-        }
-
         public Task DisconnectAsync()
         {
             Dispose();
             return Task.FromResult(0);
         }
 
-        public void Disconnect()
-        {
-            Dispose();
-        }
-
         public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            //System.Diagnostics.Debug.WriteLine("Reading async");
             return _stream.ReadAsync(buffer, offset, count, cancellationToken);
-        }
-
-        public int Read(byte[] buffer, int offset, int count)
-        {
-            int nbytes = 0;
-            lock (_stream)
-            {
-                nbytes = _stream.Read(buffer, offset, count);
-            }
-#if NET452 || NET461
-            //System.Diagnostics.Debug.WriteLine(string.Format("Read {0} bytes in thread {1}", nbytes, System.Threading.Thread.CurrentThread.ManagedThreadId));
-#endif
-            return nbytes;
         }
 
         public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            //System.Diagnostics.Debug.WriteLine("Writing async");
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
-        }
-
-        public void Write(byte[] buffer, int offset, int count)
-        {
-            _stream.Write(buffer, offset, count);
-#if NET452 || NET461
-            //System.Diagnostics.Debug.WriteLine(string.Format("Write {0} bytes in thread {1}", count, System.Threading.Thread.CurrentThread.ManagedThreadId));
-#endif
         }
 
         public void Dispose()
@@ -205,11 +154,6 @@ namespace MQTTnet.Implementations
             else
             {
                 _stream = new NetworkStream(_socket, true);
-            }
-            if (_clientOptions != null)
-            {
-                _stream.WriteTimeout = Convert.ToInt32(_clientOptions.CommunicationTimeout.TotalMilliseconds);
-                _stream.ReadTimeout = Convert.ToInt32(_clientOptions.CommunicationTimeout.TotalMilliseconds);
             }
         }
 

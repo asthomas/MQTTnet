@@ -116,24 +116,6 @@ namespace MQTTnet.Extensions.ManagedClient
             _messageQueue.Add(applicationMessage);
         }
 
-        public void Publish(MqttApplicationMessage applicationMessage)
-        {
-            if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
-
-            Publish(new ManagedMqttApplicationMessageBuilder().WithApplicationMessage(applicationMessage).Build());
-        }
-
-        public void Publish(ManagedMqttApplicationMessage applicationMessage)
-        {
-            if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
-
-            if (_storageManager != null)
-            {
-                _storageManager.Add(applicationMessage);
-            }
-            _messageQueue.Add(applicationMessage);
-        }
-
         public Task SubscribeAsync(IEnumerable<TopicFilter> topicFilters)
         {
             if (topicFilters == null) throw new ArgumentNullException(nameof(topicFilters));

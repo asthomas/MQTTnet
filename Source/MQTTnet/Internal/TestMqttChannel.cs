@@ -25,17 +25,9 @@ namespace MQTTnet.Internal
             return Task.FromResult(0);
         }
 
-        public void Connect()
-        {
-        }
-
         public Task DisconnectAsync()
         {
             return Task.FromResult(0);
-        }
-
-        public void Disconnect()
-        {
         }
 
         public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -46,16 +38,6 @@ namespace MQTTnet.Internal
         public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
-        }
-
-        public int Read(byte[] buffer, int offset, int count)
-        {
-            return _stream.Read(buffer, offset, count);
-        }
-
-        public void Write(byte[] buffer, int offset, int count)
-        {
-            _stream.Write(buffer, offset, count);
         }
     }
 }

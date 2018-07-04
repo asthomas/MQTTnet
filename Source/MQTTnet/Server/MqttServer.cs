@@ -11,8 +11,6 @@ namespace MQTTnet.Server
 {
     public class MqttServer : IMqttServer
     {
-        public bool IsSync { get; private set; }
-
         private readonly ICollection<IMqttServerAdapter> _adapters;
         private readonly IMqttNetChildLogger _logger;
 
@@ -46,16 +44,6 @@ namespace MQTTnet.Server
             return _clientSessionsManager.GetClientStatusAsync();
         }
 
-        public IList<IMqttClientSessionStatus> GetClientSessionsStatus()
-        {
-            return _clientSessionsManager.GetClientStatus();
-        }
-
-        public IEnumerable<string> GetAllTopics()
-        {
-            return _retainedMessagesManager.GetAllTopics();
-        }
-
         public Task SubscribeAsync(string clientId, IList<TopicFilter> topicFilters)
         {
             if (clientId == null) throw new ArgumentNullException(nameof(clientId));
@@ -64,28 +52,12 @@ namespace MQTTnet.Server
             return _clientSessionsManager.SubscribeAsync(clientId, topicFilters);
         }
 
-        public void Subscribe(string clientId, IList<TopicFilter> topicFilters)
-        {
-            if (clientId == null) throw new ArgumentNullException(nameof(clientId));
-            if (topicFilters == null) throw new ArgumentNullException(nameof(topicFilters));
-
-            _clientSessionsManager.Subscribe(clientId, topicFilters);
-        }
-
         public Task UnsubscribeAsync(string clientId, IList<string> topicFilters)
         {
             if (clientId == null) throw new ArgumentNullException(nameof(clientId));
             if (topicFilters == null) throw new ArgumentNullException(nameof(topicFilters));
 
             return _clientSessionsManager.UnsubscribeAsync(clientId, topicFilters);
-        }
-
-        public void Unsubscribe(string clientId, IList<string> topicFilters)
-        {
-            if (clientId == null) throw new ArgumentNullException(nameof(clientId));
-            if (topicFilters == null) throw new ArgumentNullException(nameof(topicFilters));
-
-            _clientSessionsManager.Unsubscribe(clientId, topicFilters);
         }
 
         public Task PublishAsync(MqttApplicationMessage applicationMessage)
@@ -97,15 +69,6 @@ namespace MQTTnet.Server
             _clientSessionsManager.EnqueueApplicationMessage(null, applicationMessage.ToPublishPacket());
 
             return Task.FromResult(0);
-        }
-
-        public void Publish(MqttApplicationMessage applicationMessage)
-        {
-            if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
-
-            if (_cancellationTokenSource == null) throw new InvalidOperationException("The server is not started.");
-
-            _clientSessionsManager.EnqueueApplicationMessage(null, applicationMessage.ToPublishPacket());
         }
 
         public async Task StartAsync(IMqttServerOptions options)
@@ -130,12 +93,6 @@ namespace MQTTnet.Server
 
             _logger.Info("Started.");
             Started?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void Start(IMqttServerOptions options)
-        {
-            IsSync = true;
-            StartAsync(options).Wait();
         }
 
         public async Task StopAsync()
@@ -172,11 +129,6 @@ namespace MQTTnet.Server
             }
         }
 
-        public void Stop()
-        {
-            StopAsync().Wait();
-        }
-
         internal void OnClientConnected(string clientId)
         {
             _logger.Info("Client '{0}': Connected.", clientId);
@@ -206,17 +158,7 @@ namespace MQTTnet.Server
 
         private void OnClientAccepted(object sender, MqttServerAdapterClientAcceptedEventArgs eventArgs)
         {
-            if (IsSync)
-            {
-				eventArgs.SessionTask = _clientSessionsManager.StartSession(eventArgs.Client);
-                //eventArgs.SessionTask = Task.Run(
-                //    () => _clientSessionsManager.RunSession(eventArgs.Client, _cancellationTokenSource.Token),
-                //    _cancellationTokenSource.Token);
-            }
-            else
-            {
-				eventArgs.SessionTask = _clientSessionsManager.StartSession(eventArgs.Client);
-            }
+            eventArgs.SessionTask = _clientSessionsManager.StartSession(eventArgs.Client);
         }
     }
 }

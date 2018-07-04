@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using MQTTnet.Packets;
 
@@ -75,68 +74,5 @@ namespace MQTTnet.Client
             var key = new Tuple<ushort, Type>(identifier ?? 0, typeof(TResponsePacket));
             _awaiters.TryRemove(key, out _);
         }
-
-        //#region Synchronous equivalents
-        //private readonly ConcurrentDictionary<Tuple<ushort, Type>, Action<MqttBasePacket>> _awaitersSync = new ConcurrentDictionary<Tuple<ushort, Type>, Action<MqttBasePacket>>();
-
-        //public void DispatchSync(Exception exception)
-        //{
-        //    _awaitersSync.Clear();
-        //    throw (exception);
-        //}
-
-        //public void DispatchSync(MqttBasePacket packet)
-        //{
-        //    if (packet == null) throw new ArgumentNullException(nameof(packet));
-
-        //    ushort identifier = 0;
-        //    if (packet is IMqttPacketWithIdentifier packetWithIdentifier && packetWithIdentifier.PacketIdentifier.HasValue)
-        //    {
-        //        identifier = packetWithIdentifier.PacketIdentifier.Value;
-        //    }
-
-        //    var type = packet.GetType();
-        //    var key = new Tuple<ushort, Type>(identifier, type);
-
-        //    if (_awaitersSync.TryRemove(key, out var awaiter))
-        //    {
-        //        awaiter(packet);
-        //        return;
-        //    }
-
-        //    throw new InvalidOperationException($"Packet of type '{type.Name}' not handled or dispatched.");
-        //}
-
-        //public void ResetSync()
-        //{
-        //    _awaitersSync.Clear();
-        //}
-
-        //public void AddPacketAwaiterSync<TResponsePacket>(ushort? identifier) where TResponsePacket : MqttBasePacket
-        //{
-        //    if (!identifier.HasValue)
-        //    {
-        //        identifier = 0;
-        //    }
-
-        //    var key = new Tuple<ushort, Type>(identifier ?? 0, typeof(TResponsePacket));
-        //    if (!_awaitersSync.TryAdd(key, (Action<MqttBasePacket>)((packet) => { })))
-        //    {
-        //        throw new InvalidOperationException($"The packet dispatcher already has an awaiter for packet of type '{key.Item2.Name}' with identifier {key.Item1}.");
-        //    }
-        //}
-
-        //public void RemovePacketAwaiterSync<TResponsePacket>(ushort? identifier) where TResponsePacket : MqttBasePacket
-        //{
-        //    if (!identifier.HasValue)
-        //    {
-        //        identifier = 0;
-        //    }
-
-        //    var key = new Tuple<ushort, Type>(identifier ?? 0, typeof(TResponsePacket));
-        //    _awaitersSync.TryRemove(key, out _);
-        //}
-
-        //#endregion
     }
 }

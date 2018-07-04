@@ -60,20 +60,6 @@ namespace MQTTnet.Server
             }
         }
 
-        public void HandleMessage(string clientId, MqttApplicationMessage applicationMessage)
-        {
-            if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
-
-            try
-            {
-                HandleMessageInternal(clientId, applicationMessage);
-            }
-            catch (Exception exception)
-            {
-                _logger.Error(exception, "Unhandled exception while handling retained messages.");
-            }
-        }
-
         public IList<MqttApplicationMessage> GetSubscribedMessages(ICollection<TopicFilter> topicFilters)
         {
             var retainedMessages = new List<MqttApplicationMessage>();
@@ -98,35 +84,16 @@ namespace MQTTnet.Server
             return retainedMessages;
         }
 
-        public IEnumerable<string> GetAllTopics()
-        {
-            return _messages.Values.Select(m => m.Topic);
-        }
-
-        public event EventHandler<string> NewTopicAdded;
-
         private async Task HandleMessageInternalAsync(string clientId, MqttApplicationMessage applicationMessage)
         {
             var saveIsRequired = false;
 
             lock (_messages)
             {
-				if (!_messages.ContainsKey(applicationMessage.Topic))
-				{
-                    _messages.Add(applicationMessage.Topic, applicationMessage);
-                    NewTopicAdded?.Invoke(this, applicationMessage.Topic);
-				}
-				else
-				{
-                    _messages[applicationMessage.Topic] = applicationMessage;
-				}
-				
                 if (applicationMessage.Payload?.Length == 0)
                 {
-#if REMOVE_STORED_MESSAGE_ON_ZERO
                     saveIsRequired = _messages.Remove(applicationMessage.Topic);
                     _logger.Info("Client '{0}' cleared retained message for topic '{1}'.", clientId, applicationMessage.Topic);
-#endif
                 }
                 else
                 {
@@ -163,114 +130,6 @@ namespace MQTTnet.Server
 
                 await _options.Storage.SaveRetainedMessagesAsync(messages).ConfigureAwait(false);
             }
-        }
-
-
-        private void HandleMessageInternal(string clientId, MqttApplicationMessage applicationMessage)
-        {
-            var saveIsRequired = false;
-
-            lock (_messages)
-            {
-                if (!_messages.ContainsKey(applicationMessage.Topic))
-                {
-                    _messages.Add(applicationMessage.Topic, applicationMessage);
-                    NewTopicAdded?.Invoke(this, applicationMessage.Topic);
-                }
-                else
-                {
-                    _messages[applicationMessage.Topic] = applicationMessage;
-                }
-
-                if (applicationMessage.Payload?.Length == 0)
-                {
-#if REMOVE_STORED_MESSAGE_ON_ZERO
-                    saveIsRequired = _messages.Remove(applicationMessage.Topic);
-                    _logger.Info("Client '{0}' cleared retained message for topic '{1}'.", clientId, applicationMessage.Topic);
-#endif
-                }
-                else
-                {
-                    if (!_messages.TryGetValue(applicationMessage.Topic, out var existingMessage))
-                    {
-                        _messages[applicationMessage.Topic] = applicationMessage;
-                        saveIsRequired = true;
-                    }
-                    else
-                    {
-                        if (existingMessage.QualityOfServiceLevel != applicationMessage.QualityOfServiceLevel || !existingMessage.Payload.SequenceEqual(applicationMessage.Payload ?? new byte[0]))
-                        {
-                            _messages[applicationMessage.Topic] = applicationMessage;
-                            saveIsRequired = true;
-                        }
-                    }
-
-                    _logger.Info("Client '{0}' set retained message for topic '{1}'.", clientId, applicationMessage.Topic);
-                }
-            }
-
-            if (!saveIsRequired)
-            {
-                _logger.Verbose("Skipped saving retained messages because no changes were detected.");
-            }
-
-            if (saveIsRequired && _options.Storage != null)
-            {
-                List<MqttApplicationMessage> messages;
-                lock (_messages)
-                {
-                    messages = _messages.Values.ToList();
-                }
-
-                _options.Storage.SaveRetainedMessagesAsync(messages).Wait();
-            }
-
-            //var saveIsRequired = false;
-
-            //if (!_messages.ContainsKey(applicationMessage.Topic))
-            //{
-            //    _messages.Add(applicationMessage.Topic, applicationMessage);
-            //    NewTopicAdded?.Invoke(this, applicationMessage.Topic);
-            //}
-            //else
-            //{
-            //    _messages[applicationMessage.Topic] = applicationMessage;
-            //}
-
-            //if (applicationMessage.Payload?.Length == 0)
-            //{
-            //    saveIsRequired = _messages.TryRemove(applicationMessage.Topic, out _);
-            //    _logger.Info("Client '{0}' cleared retained message for topic '{1}'.", clientId, applicationMessage.Topic);
-            //}
-            //else
-            //{
-            //    if (!_messages.TryGetValue(applicationMessage.Topic, out var existingMessage))
-            //    {
-            //        _messages[applicationMessage.Topic] = applicationMessage;
-            //        NewTopicAdded?.Invoke(this, applicationMessage.Topic);
-            //        saveIsRequired = true;
-            //    }
-            //    else
-            //    {
-            //        if (existingMessage.QualityOfServiceLevel != applicationMessage.QualityOfServiceLevel || !existingMessage.Payload.SequenceEqual(applicationMessage.Payload ?? new byte[0]))
-            //        {
-            //            _messages[applicationMessage.Topic] = applicationMessage;
-            //            saveIsRequired = true;
-            //        }
-            //    }
-
-            //    _logger.Info("Client '{0}' set retained message for topic '{1}'.", clientId, applicationMessage.Topic);
-            //}
-
-            //if (!saveIsRequired)
-            //{
-            //    _logger.Verbose("Skipped saving retained messages because no changes were detected.");
-            //}
-
-            //if (saveIsRequired && _options.Storage != null)
-            //{
-            //    _options.Storage.SaveRetainedMessagesAsync(_messages.Values.ToList());
-            //}
         }
     }
 }

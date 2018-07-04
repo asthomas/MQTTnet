@@ -94,30 +94,5 @@ namespace MQTTnet.Core.Tests
                 throw new InvalidOperationException("Partner is not set.");
             }
         }
-
-        public void SendPacket(TimeSpan timeout, MqttBasePacket packets)
-        {
-            throw new NotImplementedException();
-        }
-
-        public MqttBasePacket ReceivePacket(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Connect(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Disconnect(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SendPacket(MqttBasePacket packet)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

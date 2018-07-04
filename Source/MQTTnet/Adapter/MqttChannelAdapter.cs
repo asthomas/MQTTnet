@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -66,14 +65,6 @@ namespace MQTTnet.Adapter
             }
         }
 
-        public void Connect(TimeSpan timeout)
-        {
-            ThrowIfDisposed();
-            _logger.Verbose("Connecting [Timeout={0}]", timeout);
-
-            _channel.Connect();
-        }
-
         public async Task DisconnectAsync(TimeSpan timeout, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
@@ -94,55 +85,6 @@ namespace MQTTnet.Adapter
                 }
 
                 WrapException(exception);
-            }
-        }
-
-        public void Disconnect(TimeSpan timeout)
-        {
-            ThrowIfDisposed();
-            _logger.Verbose("Disconnecting [Timeout={0}]", timeout);
-
-            _channel.Disconnect();
-        }
-
-        public void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets)
-        {
-            ThrowIfDisposed();
-
-            foreach (var packet in packets)
-            {
-                SendPacket(packet);
-            }
-        }
-
-        public async Task SendPacketsAsync(TimeSpan timeout, IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken)
-        {
-            ThrowIfDisposed();
-            
-            foreach (var packet in packets)
-            {
-                await SendPacketAsync(packet, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        public void SendPacket(MqttBasePacket packet)
-        {
-            lock (_channel)
-            {
-                try
-                {
-                    _logger.Verbose("TX >>> {0}]", packet);
-                    var packetData = PacketSerializer.Serialize(packet);
-                    _channel.Write(
-                        packetData.Array,
-                        packetData.Offset,
-                        packetData.Count
-                        );
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
             }
         }
 
@@ -172,36 +114,6 @@ namespace MQTTnet.Adapter
             {
                 _writerSemaphore.Release();
             }
-        }
-
-        public MqttBasePacket ReceivePacket(TimeSpan timeout)
-        {
-            ThrowIfDisposed();
-
-            MqttBasePacket packet = null;
-            try
-            {
-                ReceivedMqttPacket receivedMqttPacket;
-
-                receivedMqttPacket = Receive(_channel);
-
-                if (receivedMqttPacket != null)
-                {
-                    packet = PacketSerializer.Deserialize(receivedMqttPacket);
-                    if (packet == null)
-                    {
-                        throw new MqttProtocolViolationException("Received malformed packet.");
-                    }
-
-                    _logger.Verbose("RX <<< {0}", packet);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-
-            return packet;
         }
 
         public async Task<MqttBasePacket> ReceivePacketAsync(TimeSpan timeout, CancellationToken cancellationToken)
@@ -247,48 +159,6 @@ namespace MQTTnet.Adapter
             }
 
             return null;
-        }
-
-        private ReceivedMqttPacket Receive(IMqttChannel channel)
-        {
-            var fixedHeader = MqttPacketReader.ReadFixedHeader(channel);
-
-            try
-            {
-                ReadingPacketStarted?.Invoke(this, EventArgs.Empty);
-
-                if (fixedHeader.RemainingLength == 0)
-                {
-                    return new ReceivedMqttPacket(fixedHeader.Flags, null);
-                }
-
-                var body = new byte[fixedHeader.RemainingLength];
-                var bodyOffset = 0;
-                var chunkSize = Math.Min(ReadBufferSize, fixedHeader.RemainingLength);
-
-                do
-                {
-                    var bytesLeft = body.Length - bodyOffset;
-                    if (chunkSize > bytesLeft)
-                    {
-                        chunkSize = bytesLeft;
-                    }
-
-                    var readBytes = channel.Read(body, bodyOffset, chunkSize);
-                    if (readBytes <= 0)
-                    {
-                        ExceptionHelper.ThrowGracefulSocketClose();
-                    }
-
-                    bodyOffset += readBytes;
-                } while (bodyOffset < body.Length);
-
-                return new ReceivedMqttPacket(fixedHeader.Flags, new MqttPacketBodyReader(body, 0));
-            }
-            finally
-            {
-                ReadingPacketCompleted?.Invoke(this, EventArgs.Empty);
-            }
         }
 
         private async Task<ReceivedMqttPacket> ReceiveAsync(IMqttChannel channel, CancellationToken cancellationToken)

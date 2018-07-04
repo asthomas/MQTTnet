@@ -50,11 +50,6 @@ namespace MQTTnet.Serializer
                 throw new MqttProtocolViolationException($"The packet type is invalid ({controlPacketType}).");
             }
 
-#if NET452 || NET461
-            //System.Diagnostics.Debug.WriteLine(string.Format("Processing packet {0} with body {1} in thread {2}",
-            //    (MqttControlPacketType)controlPacketType, receivedMqttPacket.Body?.Length, System.Threading.Thread.CurrentThread.ManagedThreadId));
-#endif
-
             switch ((MqttControlPacketType)controlPacketType)
             {
                 case MqttControlPacketType.Connect: return DeserializeConnect(receivedMqttPacket.Body);

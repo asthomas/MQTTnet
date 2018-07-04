@@ -113,25 +113,5 @@ namespace MQTTnet.AspNetCore
         public void Dispose()
         {
         }
-
-        public void Connect(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Disconnect(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SendPacket(MqttBasePacket packet)
-        {
-            throw new NotImplementedException();
-        }
-
-        public MqttBasePacket ReceivePacket(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

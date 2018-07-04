@@ -106,26 +106,6 @@ namespace MQTTnet.Benchmarks
             public void Dispose()
             {
             }
-
-            public void Connect()
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Disconnect()
-            {
-                throw new NotImplementedException();
-            }
-
-            public int Read(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Write(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
-            }
         }
     }
 }
