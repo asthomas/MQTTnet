@@ -255,7 +255,7 @@ namespace MQTTnet.Adapter
 
         private ReceivedMqttPacket Receive(IMqttChannel channel)
         {
-            var fixedHeader = MqttPacketReader.ReadFixedHeader(channel);
+            var fixedHeader = MqttPacketReader.ReadFixedHeader(channel, _fixedHeaderBuffer, _singleByteBuffer);
 
             try
             {
