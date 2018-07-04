@@ -113,6 +113,7 @@ namespace MQTTnet.Server
                 {
                     _logger.Error(exception, "Client '{0}': Unhandled exception while receiving client packets.", ClientId);
                 }
+
                 Stop(MqttClientDisconnectType.NotClean);
             }
             finally
@@ -122,6 +123,7 @@ namespace MQTTnet.Server
                     _adapter.ReadingPacketStarted -= OnAdapterReadingPacketStarted;
                     _adapter.ReadingPacketCompleted -= OnAdapterReadingPacketCompleted;
                 }
+
                 _adapter = null;
 
                 _cancellationTokenSource?.Dispose();
@@ -333,13 +335,13 @@ namespace MQTTnet.Server
             EnqueueSubscribedRetainedMessages(subscribePacket.TopicFilters);
         }
 
-        private Task HandleIncomingUnsubscribePacket(IMqttChannelAdapter adapter, MqttUnsubscribePacket unsubscribePacket, CancellationToken cancellationToken)
+        private void HandleIncomingUnsubscribePacket(IMqttChannelAdapter adapter, MqttUnsubscribePacket unsubscribePacket, CancellationToken cancellationToken)
         {
             var unsubscribeResult = _subscriptionsManager.Unsubscribe(unsubscribePacket);
-            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { unsubscribeResult }, cancellationToken);
+            adapter.SendPacketAsync(unsubscribeResult, cancellationToken).GetAwaiter().GetResult();
         }
 
-        private Task HandleIncomingPublishPacketAsync(IMqttChannelAdapter adapter, MqttPublishPacket publishPacket, CancellationToken cancellationToken)
+        private void HandleIncomingPublishPacket(IMqttChannelAdapter adapter, MqttPublishPacket publishPacket, CancellationToken cancellationToken)
         {
             switch (publishPacket.QualityOfServiceLevel)
             {
@@ -367,38 +369,7 @@ namespace MQTTnet.Server
 
         private void HandleIncomingPublishPacketWithQoS0(MqttPublishPacket publishPacket)
         {
-            var applicationMessage = publishPacket.ToApplicationMessage();
-
-            switch (applicationMessage.QualityOfServiceLevel)
-            {
-                case MqttQualityOfServiceLevel.AtMostOnce:
-                    {
-                        _sessionsManager.DispatchApplicationMessage(this, applicationMessage);
-                    }
-                    break;
-                case MqttQualityOfServiceLevel.AtLeastOnce:
-                    {
-                        HandleIncomingPublishPacketWithQoS1Sync(adapter, applicationMessage, publishPacket);
-                    }
-                    break;
-                case MqttQualityOfServiceLevel.ExactlyOnce:
-                    {
-                        HandleIncomingPublishPacketWithQoS2Sync(adapter, applicationMessage, publishPacket);
-                    }
-                    break;
-                default:
-                    {
-                        throw new MqttCommunicationException("Received a not supported QoS level.");
-                    }
-            }
-        }
-
-        private Task HandleIncomingPublishPacketWithQoS1(IMqttChannelAdapter adapter, MqttApplicationMessage applicationMessage, MqttPublishPacket publishPacket, CancellationToken cancellationToken)
-        {
-            _sessionsManager.StartDispatchApplicationMessage(this, applicationMessage);
-
-            var response = new MqttPubAckPacket { PacketIdentifier = publishPacket.PacketIdentifier };
-            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+            _sessionsManager.EnqueueApplicationMessage(this, publishPacket);
         }
 
         private void HandleIncomingPublishPacketWithQoS1(
@@ -428,12 +399,8 @@ namespace MQTTnet.Server
             {
                 PacketIdentifier = publishPacket.PacketIdentifier
             };
-        }
 
-        private Task HandleIncomingPubRelPacketAsync(IMqttChannelAdapter adapter, MqttPubRelPacket pubRelPacket, CancellationToken cancellationToken)
-        {
-            var response = new MqttPubCompPacket { PacketIdentifier = pubRelPacket.PacketIdentifier };
-            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+            adapter.SendPacketAsync(response, cancellationToken).GetAwaiter().GetResult();
         }
 
         private void OnAdapterReadingPacketCompleted(object sender, EventArgs e)

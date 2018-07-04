@@ -9,18 +9,22 @@ namespace MQTTnet.Extensions.ManagedClient
     {
         bool IsStarted { get; }
         bool IsConnected { get; }
+        int PendingApplicationMessagesCount { get; }
 
         event EventHandler<MqttClientConnectedEventArgs> Connected;
         event EventHandler<MqttClientDisconnectedEventArgs> Disconnected;
 
         event EventHandler<ApplicationMessageProcessedEventArgs> ApplicationMessageProcessed;
 
+        event EventHandler<MqttManagedProcessFailedEventArgs> ConnectingFailed;
+        event EventHandler<MqttManagedProcessFailedEventArgs> SynchronizingSubscriptionsFailed;
+        
         Task StartAsync(IManagedMqttClientOptions options);
         Task StopAsync();
 
         Task SubscribeAsync(IEnumerable<TopicFilter> topicFilters);
         Task UnsubscribeAsync(IEnumerable<string> topics);
 
-        Task PublishAsync(IEnumerable<ManagedMqttApplicationMessage> applicationMessages);
+        Task PublishAsync(ManagedMqttApplicationMessage applicationMessages);
     }
 }
