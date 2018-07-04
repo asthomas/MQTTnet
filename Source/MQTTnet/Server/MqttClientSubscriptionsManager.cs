@@ -9,6 +9,7 @@ namespace MQTTnet.Server
     public class MqttClientSubscriptionsManager
     {
         private readonly Dictionary<string, MqttQualityOfServiceLevel> _subscriptions = new Dictionary<string, MqttQualityOfServiceLevel>();
+        private readonly Dictionary<string, MqttQualityOfServiceLevel> _wildcardSubscriptions = new Dictionary<string, MqttQualityOfServiceLevel>();
         private readonly IMqttServerOptions _options;
         private readonly MqttServer _server;
         private readonly string _clientId;
@@ -56,6 +57,8 @@ namespace MQTTnet.Server
                     lock (_subscriptions)
                     {
                         _subscriptions[topicFilter.Topic] = topicFilter.QualityOfServiceLevel;
+                        if (MqttTopicFilterComparer.IsWildcardTopic(topicFilter.Topic))
+                            _wildcardSubscriptions[topicFilter.Topic] = topicFilter.QualityOfServiceLevel;
                     }
 
                     _server.OnClientSubscribedTopic(_clientId, topicFilter);
@@ -74,6 +77,7 @@ namespace MQTTnet.Server
                 foreach (var topicFilter in unsubscribePacket.TopicFilters)
                 {
                     _subscriptions.Remove(topicFilter);
+                    _wildcardSubscriptions.Remove(topicFilter);
 
                     _server.OnClientUnsubscribedTopic(_clientId, topicFilter);
                 }
@@ -91,7 +95,12 @@ namespace MQTTnet.Server
 
             lock (_subscriptions)
             {
-                foreach (var subscription in _subscriptions)
+                // If this is a non-wildcard match then use that
+                if (_subscriptions.ContainsKey(topic) && !_wildcardSubscriptions.ContainsKey(topic))
+                    qosLevels.Add(_subscriptions[topic]);
+
+                // If this matches any wildcard then also use those
+                foreach (var subscription in _wildcardSubscriptions)
                 {
                     if (!MqttTopicFilterComparer.IsMatch(topic, subscription.Key))
                     {

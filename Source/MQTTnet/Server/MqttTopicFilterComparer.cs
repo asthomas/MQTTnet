@@ -8,6 +8,13 @@ namespace MQTTnet.Server
         private const char MultiLevelWildcard = '#';
         private const char SingleLevelWildcard = '+';
 
+        public static bool IsWildcardTopic(string topic)
+        {
+            if (topic == "#" || topic.EndsWith("/#") || topic.StartsWith("+/") || topic.Contains("/+/"))
+                return true;
+            return false;
+        }
+
         public static bool IsMatch(string topic, string filter)
         {
             if (string.IsNullOrEmpty(topic)) throw new ArgumentNullException(nameof(topic));
