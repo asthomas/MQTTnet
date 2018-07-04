@@ -135,7 +135,7 @@ namespace MQTTnet.Serializer
                 return;
             }
 
-            EnsureCapacity(_buffer.Length + additionalCapacity - freeSpace);
+            EnsureCapacity(additionalCapacity - freeSpace);
         }
 
         private void EnsureCapacity(int capacity)
