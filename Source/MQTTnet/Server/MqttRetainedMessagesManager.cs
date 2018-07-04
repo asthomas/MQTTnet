@@ -92,8 +92,13 @@ namespace MQTTnet.Server
             {
                 if (applicationMessage.Payload?.Length == 0)
                 {
+<<<<<<< HEAD
                     saveIsRequired = _messages.Remove(applicationMessage.Topic);
                     _logger.Info("Client '{0}' cleared retained message for topic '{1}'.", clientId, applicationMessage.Topic);
+=======
+                    _messages[applicationMessage.Topic] = applicationMessage;
+                    saveIsRequired = true;
+>>>>>>> parent of e6cbea7... Add synchronous versions of the connect, disconnect, send, receive and related methods.
                 }
                 else
                 {
@@ -122,6 +127,7 @@ namespace MQTTnet.Server
 
             if (saveIsRequired && _options.Storage != null)
             {
+<<<<<<< HEAD
                 List<MqttApplicationMessage> messages;
                 lock (_messages)
                 {
@@ -129,6 +135,9 @@ namespace MQTTnet.Server
                 }
 
                 await _options.Storage.SaveRetainedMessagesAsync(messages).ConfigureAwait(false);
+=======
+                await _options.Storage.SaveRetainedMessagesAsync(_messages.Values.ToList()).ConfigureAwait(false);
+>>>>>>> parent of e6cbea7... Add synchronous versions of the connect, disconnect, send, receive and related methods.
             }
         }
     }

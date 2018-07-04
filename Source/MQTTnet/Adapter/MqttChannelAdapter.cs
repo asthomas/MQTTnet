@@ -89,11 +89,7 @@ namespace MQTTnet.Adapter
             }
         }
 
-<<<<<<< HEAD
         public async Task SendPacketAsync(MqttBasePacket packet, CancellationToken cancellationToken)
-=======
-        private Task SendPacketAsync(TimeSpan timeout, CancellationToken cancellationToken, MqttBasePacket packet)
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         {
             await _writerSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try

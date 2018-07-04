@@ -84,21 +84,8 @@ namespace MQTTnet.Server
         {
             if (publishPacket == null) throw new ArgumentNullException(nameof(publishPacket));
 
-<<<<<<< HEAD
             _messageQueue.Add(new MqttEnqueuedApplicationMessage(senderClientSession, publishPacket), _cancellationToken);
         }
-=======
-                var connectReturnCode = ValidateConnection(connectPacket);
-                if (connectReturnCode != MqttConnectReturnCode.ConnectionAccepted)
-                {
-                    await clientAdapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[]
-                    {
-                        new MqttConnAckPacket
-                        {
-                            ConnectReturnCode = connectReturnCode
-                        }
-                    }, cancellationToken).ConfigureAwait(false);
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
 
         public Task SubscribeAsync(string clientId, IList<TopicFilter> topicFilters)
         {
@@ -112,20 +99,9 @@ namespace MQTTnet.Server
                     throw new InvalidOperationException($"Client session '{clientId}' is unknown.");
                 }
 
-<<<<<<< HEAD
                 return session.SubscribeAsync(topicFilters);
             }
         }
-=======
-                await clientAdapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[]
-                {
-                    new MqttConnAckPacket
-                    {
-                        ConnectReturnCode = connectReturnCode,
-                        IsSessionPresent = result.IsExistingSession
-                    }
-                }, cancellationToken).ConfigureAwait(false);
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
 
         public Task UnsubscribeAsync(string clientId, IList<string> topicFilters)
         {
@@ -343,44 +319,7 @@ namespace MQTTnet.Server
                     _logger.Verbose("Created a new session for client '{0}'.", connectPacket.ClientId);
                 }
 
-<<<<<<< HEAD
                 return new PrepareClientSessionResult { IsExistingSession = isExistingSession, Session = clientSession };
-=======
-                return new GetOrCreateClientSessionResult { IsExistingSession = isExistingSession, Session = clientSession };
-            }
-        }
-
-        private async Task DispatchApplicationMessageAsync(MqttClientSession senderClientSession, MqttApplicationMessage applicationMessage)
-        {
-            try
-            {
-                var interceptorContext = InterceptApplicationMessage(senderClientSession, applicationMessage);
-                if (interceptorContext.CloseConnection)
-                {
-                    senderClientSession.Stop(MqttClientDisconnectType.NotClean);
-                }
-
-                if (interceptorContext.ApplicationMessage == null || !interceptorContext.AcceptPublish)
-                {
-                    return;
-                }
-
-                Server.OnApplicationMessageReceived(senderClientSession?.ClientId, applicationMessage);
-
-                //if (applicationMessage.Retain)
-                {
-                    await _retainedMessagesManager.HandleMessageAsync(senderClientSession?.ClientId, applicationMessage).ConfigureAwait(false);
-                }
-
-                foreach (var clientSession in _sessions.Values)
-                {
-                    clientSession.EnqueueApplicationMessage(senderClientSession, applicationMessage);
-                }
-            }
-            catch (Exception exception)
-            {
-                _logger.Error(exception, "Error while processing application message");
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
             }
         }
 

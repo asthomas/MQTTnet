@@ -294,26 +294,11 @@ namespace MQTTnet.Client
 
         private Task SendAsync(MqttBasePacket packet, CancellationToken cancellationToken)
         {
-<<<<<<< HEAD
             cancellationToken.ThrowIfCancellationRequested();
 
             _sendTracker.Restart();
 
             return _adapter.SendPacketAsync(packet, cancellationToken);
-=======
-            return SendAsync(new[] { packet }, cancellationToken);
-        }
-
-        private Task SendAsync(IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw new TaskCanceledException();
-            }
-
-            _sendTracker.Restart();
-            return _adapter.SendPacketsAsync(_options.CommunicationTimeout, packets, cancellationToken);
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         }
 
         private async Task<TResponsePacket> SendAndReceiveAsync<TResponsePacket>(MqttBasePacket requestPacket, CancellationToken cancellationToken) where TResponsePacket : MqttBasePacket
@@ -331,13 +316,8 @@ namespace MQTTnet.Client
             var packetAwaiter = _packetDispatcher.AddPacketAwaiter<TResponsePacket>(identifier);
             try
             {
-<<<<<<< HEAD
                 await _adapter.SendPacketAsync(requestPacket, cancellationToken).ConfigureAwait(false);
                 var respone = await Internal.TaskExtensions.TimeoutAfterAsync(ct => packetAwaiter.Task, _options.CommunicationTimeout, cancellationToken).ConfigureAwait(false);
-=======
-                await _adapter.SendPacketsAsync(_options.CommunicationTimeout, new[] { requestPacket }, cancellationToken).ConfigureAwait(false);
-                var respone = await Internal.TaskExtensions.TimeoutAfter(ct => packetAwaiter.Task, _options.CommunicationTimeout, cancellationToken).ConfigureAwait(false);
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
 
                 return (TResponsePacket)respone;
             }
@@ -506,7 +486,6 @@ namespace MQTTnet.Client
             return SendAsync(response, cancellationToken);
         }
 
-<<<<<<< HEAD
         private async Task PublishExactlyOnce(MqttPublishPacket publishPacket, CancellationToken cancellationToken)
         {
             publishPacket.PacketIdentifier = _packetIdentifierProvider.GetNewPacketIdentifier();
@@ -518,16 +497,6 @@ namespace MQTTnet.Client
             };
 
             await SendAndReceiveAsync<MqttPubCompPacket>(pubRelPacket, cancellationToken).ConfigureAwait(false);
-=======
-        private void ProcessReceivedPubRelPacket(MqttPubRelPacket pubRelPacket)
-        {
-            var response = new MqttPubCompPacket
-            {
-                PacketIdentifier = pubRelPacket.PacketIdentifier
-            };
-
-            Send(response);
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         }
 
         private void StartReceivingPackets(CancellationToken cancellationToken)

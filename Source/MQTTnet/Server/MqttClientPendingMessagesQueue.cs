@@ -14,11 +14,9 @@ namespace MQTTnet.Server
     public class MqttClientPendingMessagesQueue : IDisposable
     {
         private readonly AsyncAutoResetEvent _queueAutoResetEvent = new AsyncAutoResetEvent();
-        private readonly SemaphoreSlim _queueSemaphore = new SemaphoreSlim(0, int.MaxValue);
         private readonly IMqttServerOptions _options;
         private readonly MqttClientSession _clientSession;
         private readonly IMqttNetChildLogger _logger;
-        public bool IsSync;
 
         private ConcurrentQueue<MqttBasePacket> _queue = new ConcurrentQueue<MqttBasePacket>();
 
@@ -42,14 +40,7 @@ namespace MQTTnet.Server
                 return;
             }
 
-            if (IsSync)
-            {
-                Task.Run(() => SendQueuedPackets(adapter, cancellationToken), cancellationToken);
-            }
-            else
-            {
-                Task.Run(() => SendQueuedPacketsAsync(adapter, cancellationToken), cancellationToken);
-            }
+            Task.Run(() => SendQueuedPacketsAsync(adapter, cancellationToken), cancellationToken);
         }
         
         public void Enqueue(MqttBasePacket packet)
@@ -70,14 +61,7 @@ namespace MQTTnet.Server
             }
 
             _queue.Enqueue(packet);
-            if (IsSync)
-            {
-                _queueSemaphore.Release();
-            }
-            else
-            {
-                _queueAutoResetEvent.Set();
-            }
+            _queueAutoResetEvent.Set();
 
             _logger.Verbose("Enqueued packet (ClientId: {0}).", _clientSession.ClientId);
         }
@@ -169,84 +153,5 @@ namespace MQTTnet.Server
                 }
             }
         }
-
-        private void SendQueuedPackets(IMqttChannelAdapter adapter, CancellationToken cancellationToken)
-        {
-            try
-            {
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    TrySendNextQueuedPacket(adapter, cancellationToken);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                _logger.Error(exception, "Unhandled exception while sending enqueued packet (ClientId: {0}).", _clientSession.ClientId);
-            }
-        }
-
-        private void TrySendNextQueuedPacket(IMqttChannelAdapter adapter, CancellationToken cancellationToken)
-        {
-            MqttBasePacket packet = null;
-            try
-            {
-                if (_queue.IsEmpty)
-                {
-                    _queueSemaphore.Wait(100);
-                    //_queueAutoResetEvent.WaitOneAsync(cancellationToken).Wait();
-                }
-
-                if (!_queue.TryDequeue(out packet))
-                {
-                    return;
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                adapter.SendPackets(_options.DefaultCommunicationTimeout, new[] { packet });
-
-                _logger.Verbose("Enqueued packet sent (ClientId: {0}).", _clientSession.ClientId);
-            }
-            catch (Exception exception)
-            {
-                if (exception is MqttCommunicationTimedOutException)
-                {
-                    _logger.Warning(exception, "Sending publish packet failed: Timeout (ClientId: {0}).", _clientSession.ClientId);
-                }
-                else if (exception is MqttCommunicationException)
-                {
-                    _logger.Warning(exception, "Sending publish packet failed: Communication exception (ClientId: {0}).", _clientSession.ClientId);
-                }
-                else if (exception is OperationCanceledException)
-                {
-                }
-                else
-                {
-                    _logger.Error(exception, "Sending publish packet failed (ClientId: {0}).", _clientSession.ClientId);
-                }
-
-                if (packet is MqttPublishPacket publishPacket)
-                {
-                    if (publishPacket.QualityOfServiceLevel > MqttQualityOfServiceLevel.AtMostOnce)
-                    {
-                        publishPacket.Dup = true;
-
-                        Enqueue(publishPacket);
-                    }
-                }
-
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    _clientSession.Stop(MqttClientDisconnectType.NotClean);
-                }
-            }
-        }
-
     }
 }

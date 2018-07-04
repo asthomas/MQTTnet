@@ -102,6 +102,7 @@ namespace MQTTnet.Core.Tests
             }
         }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
         public void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets)
@@ -124,5 +125,7 @@ namespace MQTTnet.Core.Tests
             throw new NotImplementedException();
         }
 >>>>>>> parent of f035b1a... Fix sync code to accommodate the changes in interfaces from batch to single message arguments.
+=======
+>>>>>>> parent of e6cbea7... Add synchronous versions of the connect, disconnect, send, receive and related methods.
     }
 }
