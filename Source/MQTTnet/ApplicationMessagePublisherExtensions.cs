@@ -14,7 +14,7 @@ namespace MQTTnet
 
             foreach (var applicationMessage in applicationMessages)
             {
-                await publisher.PublishAsync(applicationMessage).ConfigureAwait(false);
+                await publisher.PublishAsync(applicationMessage);
             }
         }
 
@@ -25,7 +25,7 @@ namespace MQTTnet
 
             foreach (var applicationMessage in applicationMessages)
             {
-                await publisher.PublishAsync(applicationMessage).ConfigureAwait(false);
+                await publisher.PublishAsync(applicationMessage);
             }
         }
 
@@ -35,7 +35,8 @@ namespace MQTTnet
             if (topic == null) throw new ArgumentNullException(nameof(topic));
 
             return publisher.PublishAsync(builder => builder
-                .WithTopic(topic));
+                .WithTopic(topic)
+            );
         }
 
         public static Task PublishAsync(this IApplicationMessagePublisher publisher, string topic, string payload)
@@ -45,7 +46,8 @@ namespace MQTTnet
 
             return publisher.PublishAsync(builder => builder
                 .WithTopic(topic)
-                .WithPayload(payload));
+                .WithPayload(payload)
+            );
         }
 
         public static Task PublishAsync(this IApplicationMessagePublisher publisher, string topic, string payload, MqttQualityOfServiceLevel qualityOfServiceLevel)
@@ -56,19 +58,8 @@ namespace MQTTnet
             return publisher.PublishAsync(builder => builder
                 .WithTopic(topic)
                 .WithPayload(payload)
-                .WithQualityOfServiceLevel(qualityOfServiceLevel));
-        }
-
-        public static Task PublishAsync(this IApplicationMessagePublisher publisher, string topic, string payload, MqttQualityOfServiceLevel qualityOfServiceLevel, bool retain)
-        {
-            if (publisher == null) throw new ArgumentNullException(nameof(publisher));
-            if (topic == null) throw new ArgumentNullException(nameof(topic));
-
-            return publisher.PublishAsync(builder => builder
-                .WithTopic(topic)
-                .WithPayload(payload)
                 .WithQualityOfServiceLevel(qualityOfServiceLevel)
-                .WithRetainFlag(retain));
+            );
         }
 
         public static Task PublishAsync(this IApplicationMessagePublisher publisher, Func<MqttApplicationMessageBuilder, MqttApplicationMessageBuilder> builder)

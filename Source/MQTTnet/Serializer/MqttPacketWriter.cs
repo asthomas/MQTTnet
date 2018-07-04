@@ -89,8 +89,6 @@ namespace MQTTnet.Serializer
 
         public void Write(byte[] array, int offset, int count)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
-
             EnsureAdditionalCapacity(count);
 
             Array.Copy(array, offset, _buffer, _position, count);
@@ -142,13 +140,12 @@ namespace MQTTnet.Serializer
 
         private void EnsureCapacity(int capacity)
         {
-            var newBufferLength = _buffer.Length;
-
-            if (newBufferLength >= capacity)
+            if (_buffer.Length >= capacity)
             {
                 return;
             }
-            
+
+            var newBufferLength = _buffer.Length;
             while (newBufferLength < capacity)
             {
                 newBufferLength *= 2;
@@ -160,7 +157,6 @@ namespace MQTTnet.Serializer
         private void IncreasePostition(int length)
         {
             _position += length;
-
             if (_position > Length)
             {
                 Length = _position;
