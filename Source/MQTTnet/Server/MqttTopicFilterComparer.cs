@@ -11,20 +11,33 @@ namespace MQTTnet.Server
         private const char MultiLevelWildcard = '#';
         private const char SingleLevelWildcard = '+';
 
-        public static bool IsWildcardTopic(string topic)
+        private static Dictionary<string, string> regexMap = new Dictionary<string, string>()
         {
-            if (topic == "#" || topic.EndsWith("/#") || topic.StartsWith("+/") || topic.Contains("/+/"))
-                return true;
-            return false;
+            { "/+", "/[^/]" },
+            { "/#", "/.*" }
+        };
+
+        private static Regex FilterRegex = new Regex(String.Join("|", regexMap.Keys.Select(k => Regex.Escape(k))));
+
+        public static bool IsMatchX(string topic, string filter)
+        {
+            //filter = Regex.Replace(filter, "/\\+(/|$)", "/[^/]+$1");
+            //filter = Regex.Replace(filter, "/#$", "/.*");
+            //return Regex.IsMatch(topic, filter);
+
+            filter = FilterRegex.Replace(filter, m => regexMap[m.Value]);
+            return Regex.IsMatch(topic, filter);
+        }
+
+        public static bool IsMatchY(string topic, string filter)
+        {
+            return topic == filter;
         }
 
         public static bool IsMatch(string topic, string filter)
         {
             if (string.IsNullOrEmpty(topic)) throw new ArgumentNullException(nameof(topic));
             if (string.IsNullOrEmpty(filter)) throw new ArgumentNullException(nameof(filter));
-
-            if (topic == filter)
-                return true;
 
             var sPos = 0;
             var sLen = filter.Length;
