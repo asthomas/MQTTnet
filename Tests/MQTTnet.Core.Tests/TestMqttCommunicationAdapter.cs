@@ -35,18 +35,11 @@ namespace MQTTnet.Core.Tests
             return Task.FromResult(0);
         }
 
-<<<<<<< HEAD
         public Task SendPacketAsync(MqttBasePacket packet, CancellationToken cancellationToken)
-=======
-        public Task SendPacketsAsync(TimeSpan timeout, IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken)
->>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         {
             ThrowIfPartnerIsNull();
 
-            foreach (var packet in packets)
-            {
-                Partner.EnqueuePacketInternal(packet);
-            }
+            Partner.EnqueuePacketInternal(packet);
 
             return Task.FromResult(0);
         }
@@ -101,31 +94,5 @@ namespace MQTTnet.Core.Tests
                 throw new InvalidOperationException("Partner is not set.");
             }
         }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-        public void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets)
-        {
-            throw new NotImplementedException();
-        }
-
-        public MqttBasePacket ReceivePacket(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Connect(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Disconnect(TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
->>>>>>> parent of f035b1a... Fix sync code to accommodate the changes in interfaces from batch to single message arguments.
-=======
->>>>>>> parent of e6cbea7... Add synchronous versions of the connect, disconnect, send, receive and related methods.
     }
 }
