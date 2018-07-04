@@ -115,8 +115,8 @@ namespace MQTTnet.Server
                     lock (_subscriptions)
                     {
                         _subscriptions[topicFilter.Topic] = topicFilter.QualityOfServiceLevel;
+			SubscriptionAdded(topicFilter.Topic);
                     }
-                    SubscriptionAdded(topicFilter.Topic);
 
                     _server.OnClientSubscribedTopic(_clientId, topicFilter);
                 }
@@ -129,14 +129,14 @@ namespace MQTTnet.Server
         {
             if (unsubscribePacket == null) throw new ArgumentNullException(nameof(unsubscribePacket));
 
-            foreach (var topicFilter in unsubscribePacket.TopicFilters)
+            lock (_subscriptions)
             {
-                lock (_subscriptions)
+                foreach (var topicFilter in unsubscribePacket.TopicFilters)
                 {
                     _subscriptions.Remove(topicFilter);
+                    SubscriptionRemoved(topicFilter);
+                    _server.OnClientUnsubscribedTopic(_clientId, topicFilter);
                 }
-                SubscriptionRemoved(topicFilter);
-                _server.OnClientUnsubscribedTopic(_clientId, topicFilter);
             }
 
             return new MqttUnsubAckPacket
