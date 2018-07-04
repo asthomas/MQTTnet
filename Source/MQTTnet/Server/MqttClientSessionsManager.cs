@@ -20,8 +20,6 @@ namespace MQTTnet.Server
     {
         private readonly ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();
         private readonly AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
-        public int Count { get { return _queue.Count; } }
-
         public void Add(T item, CancellationToken cancellationToken)
         {
             _queue.Enqueue(item);
@@ -158,22 +156,7 @@ namespace MQTTnet.Server
         {
             if (publishPacket == null) throw new ArgumentNullException(nameof(publishPacket));
 
-            if (_messageQueue.Count >= _options.MaxPendingMessagesPerClient)
-            {
-                if (_options.PendingMessagesOverflowStrategy == MqttPendingMessagesOverflowStrategy.DropNewMessage)
-                {
-                    publishPacket = null;
-                }
-                else if (_options.PendingMessagesOverflowStrategy == MqttPendingMessagesOverflowStrategy.DropOldestQueuedMessage)
-                {
-                    _messageQueue.Take(CancellationToken.None);
-                }
-            }
-
-            if (publishPacket != null)
-            {
-                _messageQueue.Add(new MqttEnqueuedApplicationMessage(senderClientSession, publishPacket), _cancellationToken);
-            }
+            _messageQueue.Add(new MqttEnqueuedApplicationMessage(senderClientSession, publishPacket), _cancellationToken);
         }
 
         public Task SubscribeAsync(string clientId, IList<TopicFilter> topicFilters)
