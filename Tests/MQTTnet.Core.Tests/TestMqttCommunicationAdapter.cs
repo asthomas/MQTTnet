@@ -94,5 +94,28 @@ namespace MQTTnet.Core.Tests
                 throw new InvalidOperationException("Partner is not set.");
             }
         }
+<<<<<<< HEAD
+=======
+
+        public void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets)
+        {
+            throw new NotImplementedException();
+        }
+
+        public MqttBasePacket ReceivePacket(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Connect(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Disconnect(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+>>>>>>> parent of f035b1a... Fix sync code to accommodate the changes in interfaces from batch to single message arguments.
     }
 }
