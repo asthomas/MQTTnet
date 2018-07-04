@@ -9,15 +9,16 @@ namespace MQTTnet.Serializer
 {
     public static class MqttPacketReader
     {
-        public static MqttFixedHeader ReadFixedHeader(IMqttChannel channel, byte[] fixedHeaderBuffer, byte[] singleByteBuffer)
+        public static MqttFixedHeader ReadFixedHeader(IMqttChannel channel)
         {
             // The MQTT fixed header contains 1 byte of flags and at least 1 byte for the remaining data length.
             // So in all cases at least 2 bytes must be read for a complete MQTT packet.
+            var buffer = InitializeFixedHeaderBuffer();
             var totalBytesRead = 0;
 
-            while (totalBytesRead < fixedHeaderBuffer.Length)
+            while (totalBytesRead < buffer.Length)
             {
-                var bytesRead = channel.Read(fixedHeaderBuffer, totalBytesRead, fixedHeaderBuffer.Length - totalBytesRead);
+                var bytesRead = channel.Read(buffer, totalBytesRead, buffer.Length - totalBytesRead);
                 if (bytesRead <= 0)
                 {
                     ExceptionHelper.ThrowGracefulSocketClose();
@@ -26,14 +27,14 @@ namespace MQTTnet.Serializer
                 totalBytesRead += bytesRead;
             }
 
-            var hasRemainingLength = fixedHeaderBuffer[1] != 0;
+            var hasRemainingLength = buffer[1] != 0;
             if (!hasRemainingLength)
             {
-                return new MqttFixedHeader(fixedHeaderBuffer[0], 0);
+                return new MqttFixedHeader(buffer[0], 0);
             }
 
-            var bodyLength = ReadBodyLength(channel, fixedHeaderBuffer[1], singleByteBuffer);
-            return new MqttFixedHeader(fixedHeaderBuffer[0], bodyLength);
+            var bodyLength = ReadBodyLength(channel, buffer[1]);
+            return new MqttFixedHeader(buffer[0], bodyLength);
         }
 
         [ThreadStatic]
@@ -73,7 +74,7 @@ namespace MQTTnet.Serializer
             return new MqttFixedHeader(buffer[0], bodyLength);
         }
 
-        private static int ReadBodyLength(IMqttChannel channel, byte initialEncodedByte, byte[] singleByteBuffer)
+        private static int ReadBodyLength(IMqttChannel channel, byte initialEncodedByte)
         {
             // Alorithm taken from https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html.
             var multiplier = 128;
@@ -82,7 +83,7 @@ namespace MQTTnet.Serializer
 
             while ((encodedByte & 128) != 0)
             {
-                encodedByte = ReadByteSync(channel, singleByteBuffer);
+                encodedByte = ReadByteSync(channel);
 
                 value += (byte)(encodedByte & 127) * multiplier;
                 if (multiplier > 128 * 128 * 128)
@@ -125,15 +126,16 @@ namespace MQTTnet.Serializer
             return value;
         }
 
-        private static byte ReadByteSync(IMqttChannel channel, byte[] singleByteBuffer)
+        private static byte ReadByteSync(IMqttChannel channel)
         {
-            var readCount = channel.Read(singleByteBuffer, 0, 1);
+            var buffer = InitializeSingleByteBuffer();
+            var readCount = channel.Read(buffer, 0, 1);
             if (readCount <= 0)
             {
                 ExceptionHelper.ThrowGracefulSocketClose();
             }
 
-            return singleByteBuffer[0];
+            return buffer[0];
         }
 
         private static byte ReadByte(IMqttChannel channel, byte[] singleByteBuffer, CancellationToken cancellationToken)
