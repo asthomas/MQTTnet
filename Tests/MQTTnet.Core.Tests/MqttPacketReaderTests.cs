@@ -14,9 +14,7 @@ namespace MQTTnet.Core.Tests
         [ExpectedException(typeof(MqttCommunicationClosedGracefullyException))]
         public void MqttPacketReader_EmptyStream()
         {
-            var fixedHeader = new byte[2];
-            var singleByteBuffer = new byte[1];
-            MqttPacketReader.ReadFixedHeaderAsync(new TestMqttChannel(new MemoryStream()), fixedHeader, singleByteBuffer, CancellationToken.None).GetAwaiter().GetResult();
+            MqttPacketReader.ReadFixedHeaderAsync(new TestMqttChannel(new MemoryStream()), CancellationToken.None).GetAwaiter().GetResult();
         }
     }
 }
