@@ -60,13 +60,32 @@ namespace MQTTnet.Server
             return _clientSessionsManager.UnsubscribeAsync(clientId, topicFilters);
         }
 
+<<<<<<< HEAD
         public Task PublishAsync(MqttApplicationMessage applicationMessage)
+=======
+        public void Unsubscribe(string clientId, IList<string> topicFilters)
         {
-            if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
+            if (clientId == null) throw new ArgumentNullException(nameof(clientId));
+            if (topicFilters == null) throw new ArgumentNullException(nameof(topicFilters));
+
+            _clientSessionsManager.Unsubscribe(clientId, topicFilters);
+        }
+
+        public Task PublishAsync(IEnumerable<MqttApplicationMessage> applicationMessages)
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
+        {
+            if (applicationMessages == null) throw new ArgumentNullException(nameof(applicationMessages));
 
             if (_cancellationTokenSource == null) throw new InvalidOperationException("The server is not started.");
 
+<<<<<<< HEAD
             _clientSessionsManager.EnqueueApplicationMessage(null, applicationMessage.ToPublishPacket());
+=======
+            foreach (var applicationMessage in applicationMessages)
+            {
+                _clientSessionsManager.StartDispatchApplicationMessage(null, applicationMessage);
+            }
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
 
             return Task.FromResult(0);
         }

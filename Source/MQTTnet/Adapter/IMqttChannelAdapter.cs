@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MQTTnet.Packets;
@@ -20,8 +21,20 @@ namespace MQTTnet.Adapter
 
         Task DisconnectAsync(TimeSpan timeout, CancellationToken cancellationToken);
 
+<<<<<<< HEAD
         Task SendPacketAsync(MqttBasePacket packet, CancellationToken cancellationToken);
 
         Task<MqttBasePacket> ReceivePacketAsync(TimeSpan timeout, CancellationToken cancellationToken);
+=======
+        void Disconnect(TimeSpan timeout);
+
+        Task SendPacketsAsync(TimeSpan timeout, IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken);
+
+        Task<MqttBasePacket> ReceivePacketAsync(TimeSpan timeout, CancellationToken cancellationToken);
+
+        void SendPackets(TimeSpan timeout, IEnumerable<MqttBasePacket> packets);
+
+        MqttBasePacket ReceivePacket(TimeSpan timeout);
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
     }
 }

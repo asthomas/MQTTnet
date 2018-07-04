@@ -65,7 +65,11 @@ namespace MQTTnet.Benchmarks
 
             for (var i = 0; i < 10000; i++)
             {
+<<<<<<< HEAD
                 _channelAdapter.SendPacketAsync(_packet, CancellationToken.None).GetAwaiter().GetResult();
+=======
+                _channelAdapter.SendPacketsAsync(TimeSpan.FromSeconds(15), new[] { _packet }, CancellationToken.None).GetAwaiter().GetResult();
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
             }
 
             _stream.Position = 0;

@@ -35,11 +35,18 @@ namespace MQTTnet.Core.Tests
             return Task.FromResult(0);
         }
 
+<<<<<<< HEAD
         public Task SendPacketAsync(MqttBasePacket packet, CancellationToken cancellationToken)
+=======
+        public Task SendPacketsAsync(TimeSpan timeout, IEnumerable<MqttBasePacket> packets, CancellationToken cancellationToken)
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         {
             ThrowIfPartnerIsNull();
 
-            Partner.EnqueuePacketInternal(packet);
+            foreach (var packet in packets)
+            {
+                Partner.EnqueuePacketInternal(packet);
+            }
 
             return Task.FromResult(0);
         }

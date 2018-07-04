@@ -253,8 +253,12 @@ namespace MQTTnet.Server
 
             if (packet is MqttPingReqPacket)
             {
+<<<<<<< HEAD
                 adapter.SendPacketAsync(new MqttPingRespPacket(), cancellationToken).GetAwaiter().GetResult();
                 return;
+=======
+                return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { new MqttPingRespPacket() }, cancellationToken);
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
             }
 
             if (packet is MqttPubRelPacket pubRelPacket)
@@ -275,8 +279,12 @@ namespace MQTTnet.Server
                     PacketIdentifier = pubRecPacket.PacketIdentifier
                 };
 
+<<<<<<< HEAD
                 adapter.SendPacketAsync(responsePacket, cancellationToken).GetAwaiter().GetResult();
                 return;
+=======
+                return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { responsePacket }, cancellationToken);
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
             }
 
             if (packet is MqttPubAckPacket || packet is MqttPubCompPacket)
@@ -324,7 +332,11 @@ namespace MQTTnet.Server
         private void HandleIncomingSubscribePacket(IMqttChannelAdapter adapter, MqttSubscribePacket subscribePacket, CancellationToken cancellationToken)
         {
             var subscribeResult = _subscriptionsManager.Subscribe(subscribePacket);
+<<<<<<< HEAD
             adapter.SendPacketAsync(subscribeResult.ResponsePacket, cancellationToken).GetAwaiter().GetResult();
+=======
+            await adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { subscribeResult.ResponsePacket }, cancellationToken).ConfigureAwait(false);
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
 
             if (subscribeResult.CloseConnection)
             {
@@ -335,7 +347,31 @@ namespace MQTTnet.Server
             EnqueueSubscribedRetainedMessages(subscribePacket.TopicFilters);
         }
 
+<<<<<<< HEAD
         private void HandleIncomingUnsubscribePacket(IMqttChannelAdapter adapter, MqttUnsubscribePacket unsubscribePacket, CancellationToken cancellationToken)
+=======
+        private void HandleIncomingSubscribePacket(IMqttChannelAdapter adapter, MqttSubscribePacket subscribePacket)
+        {
+            var subscribeResult = _subscriptionsManager.Subscribe(subscribePacket);
+            adapter.SendPackets(_options.DefaultCommunicationTimeout, new[] { subscribeResult.ResponsePacket });
+
+            if (subscribeResult.CloseConnection)
+            {
+                Stop(MqttClientDisconnectType.NotClean);
+                return;
+            }
+
+            EnqueueSubscribedRetainedMessages(subscribePacket.TopicFilters);
+        }
+
+        private Task HandleIncomingUnsubscribePacketAsync(IMqttChannelAdapter adapter, MqttUnsubscribePacket unsubscribePacket, CancellationToken cancellationToken)
+        {
+            var unsubscribeResult = _subscriptionsManager.Unsubscribe(unsubscribePacket);
+            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { unsubscribeResult }, cancellationToken);
+        }
+
+        private void HandleIncomingUnsubscribePacket(IMqttChannelAdapter adapter, MqttUnsubscribePacket unsubscribePacket)
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         {
             var unsubscribeResult = _subscriptionsManager.Unsubscribe(unsubscribePacket);
             adapter.SendPacketAsync(unsubscribeResult, cancellationToken).GetAwaiter().GetResult();
@@ -369,7 +405,42 @@ namespace MQTTnet.Server
 
         private void HandleIncomingPublishPacketWithQoS0(MqttPublishPacket publishPacket)
         {
+<<<<<<< HEAD
             _sessionsManager.EnqueueApplicationMessage(this, publishPacket);
+=======
+            var applicationMessage = publishPacket.ToApplicationMessage();
+
+            switch (applicationMessage.QualityOfServiceLevel)
+            {
+                case MqttQualityOfServiceLevel.AtMostOnce:
+                    {
+                        _sessionsManager.DispatchApplicationMessage(this, applicationMessage);
+                    }
+                    break;
+                case MqttQualityOfServiceLevel.AtLeastOnce:
+                    {
+                        HandleIncomingPublishPacketWithQoS1Sync(adapter, applicationMessage, publishPacket);
+                    }
+                    break;
+                case MqttQualityOfServiceLevel.ExactlyOnce:
+                    {
+                        HandleIncomingPublishPacketWithQoS2Sync(adapter, applicationMessage, publishPacket);
+                    }
+                    break;
+                default:
+                    {
+                        throw new MqttCommunicationException("Received a not supported QoS level.");
+                    }
+            }
+        }
+
+        private Task HandleIncomingPublishPacketWithQoS1(IMqttChannelAdapter adapter, MqttApplicationMessage applicationMessage, MqttPublishPacket publishPacket, CancellationToken cancellationToken)
+        {
+            _sessionsManager.StartDispatchApplicationMessage(this, applicationMessage);
+
+            var response = new MqttPubAckPacket { PacketIdentifier = publishPacket.PacketIdentifier };
+            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         }
 
         private void HandleIncomingPublishPacketWithQoS1(
@@ -384,7 +455,12 @@ namespace MQTTnet.Server
                 PacketIdentifier = publishPacket.PacketIdentifier
             };
 
+<<<<<<< HEAD
             adapter.SendPacketAsync(response, cancellationToken).GetAwaiter().GetResult();
+=======
+            var response = new MqttPubRecPacket { PacketIdentifier = publishPacket.PacketIdentifier };
+            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
         }
 
         private void HandleIncomingPublishPacketWithQoS2(
@@ -395,10 +471,22 @@ namespace MQTTnet.Server
             // QoS 2 is implement as method "B" (4.3.3 QoS 2: Exactly once delivery)
             _sessionsManager.EnqueueApplicationMessage(this, publishPacket);
 
+<<<<<<< HEAD
             var response = new MqttPubRecPacket
             {
                 PacketIdentifier = publishPacket.PacketIdentifier
             };
+=======
+            var response = new MqttPubRecPacket { PacketIdentifier = publishPacket.PacketIdentifier };
+            adapter.SendPackets(_options.DefaultCommunicationTimeout, new[] { response });
+        }
+
+        private Task HandleIncomingPubRelPacketAsync(IMqttChannelAdapter adapter, MqttPubRelPacket pubRelPacket, CancellationToken cancellationToken)
+        {
+            var response = new MqttPubCompPacket { PacketIdentifier = pubRelPacket.PacketIdentifier };
+            return adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { response }, cancellationToken);
+        }
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
 
             adapter.SendPacketAsync(response, cancellationToken).GetAwaiter().GetResult();
         }

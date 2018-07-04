@@ -49,19 +49,25 @@ namespace MQTTnet.Internal
                     _isSignaled = false;
                     return true;
                 }
-
-                if (timeout == TimeSpan.Zero)
+                else if (timeout == TimeSpan.Zero)
                 {
                     return _isSignaled;
                 }
-
-                tcs = new TaskCompletionSource<bool>();
-                _waiters.AddLast(tcs);
+                else
+                {
+                    tcs = new TaskCompletionSource<bool>();
+                    _waiters.AddLast(tcs);
+                }
             }
 
+<<<<<<< HEAD
             var winner = await Task.WhenAny(tcs.Task, Task.Delay(timeout, cancellationToken)).ConfigureAwait(false);
             var taskWasSignaled = winner == tcs.Task;
             if (taskWasSignaled)
+=======
+            Task winner = await Task.WhenAny(tcs.Task, Task.Delay(timeout, cancellationToken)).ConfigureAwait(false);
+            if (winner == tcs.Task)
+>>>>>>> parent of 4c80ab6... Merge remote-tracking branch 'origin/develop' into SyncIO
             {
                 return true;
             }

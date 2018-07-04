@@ -131,7 +131,7 @@ namespace MQTTnet.Server
                     return;
                 }
 
-                await adapter.SendPacketAsync(_options.DefaultCommunicationTimeout, packet, cancellationToken).ConfigureAwait(false);
+                await adapter.SendPacketsAsync(_options.DefaultCommunicationTimeout, new[] { packet }, cancellationToken).ConfigureAwait(false);
 
                 _logger.Verbose("Enqueued packet sent (ClientId: {0}).", _clientSession.ClientId);
             }
