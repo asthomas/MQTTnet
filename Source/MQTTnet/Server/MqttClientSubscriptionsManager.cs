@@ -26,24 +26,18 @@ namespace MQTTnet.Server
         public void NewTopicAdded(string topic)
         {
             // If this topic matches any subscription then add it to a hash of matched topics
-            lock (_matchingTopics)
+            if (!_matchingTopics.ContainsKey(topic))
             {
-                if (!_matchingTopics.ContainsKey(topic))
+                foreach (string subscription in _subscriptions.Keys)
                 {
-                    lock (_subscriptions)
+                    if (MqttTopicFilterComparer.IsMatch(topic, subscription))
                     {
-                        foreach (string subscription in _subscriptions.Keys)
-                        {
-                            if (MqttTopicFilterComparer.IsMatch(topic, subscription))
-                            {
-                                if (!_matchingTopics.ContainsKey(topic))
-                                    _matchingTopics.Add(topic, new HashSet<string>());
-                                HashSet<string> matchingSubscriptions = _matchingTopics[topic];
-                                if (!matchingSubscriptions.Contains(subscription))
-                                    matchingSubscriptions.Add(subscription);
-                                break;
-                            }
-                        }
+                        if (!_matchingTopics.ContainsKey(topic))
+                            _matchingTopics.Add(topic, new HashSet<string>());
+                        HashSet<string> matchingSubscriptions = _matchingTopics[topic];
+                        if (!matchingSubscriptions.Contains(subscription))
+                            matchingSubscriptions.Add(subscription);
+                        break;
                     }
                 }
             }
@@ -134,7 +128,7 @@ namespace MQTTnet.Server
                 foreach (var topicFilter in unsubscribePacket.TopicFilters)
                 {
                     _subscriptions.Remove(topicFilter);
-                    SubscriptionRemoved(topicFilter);
+		    SubscriptionRemoved(topicFilter);
                     _server.OnClientUnsubscribedTopic(_clientId, topicFilter);
                 }
             }
@@ -175,32 +169,27 @@ namespace MQTTnet.Server
 
         public CheckSubscriptionsResult CheckSubscriptions(string topic, MqttQualityOfServiceLevel qosLevel)
         {
+            Dictionary<string, HashSet<string>> topicToSubscription = _matchingTopics;
             var qosLevels = new HashSet<MqttQualityOfServiceLevel>();
-            lock (_matchingTopics)
+
+            if (topicToSubscription.ContainsKey(topic))
             {
-                Dictionary<string, HashSet<string>> topicToSubscription = _matchingTopics;
-
-                lock (_subscriptions)
+                HashSet<string> subscriptions = topicToSubscription[topic];
+                foreach (string subscription in subscriptions)
                 {
-                    if (topicToSubscription.ContainsKey(topic))
-                    {
-                        HashSet<string> subscriptions = topicToSubscription[topic];
-                        foreach (string subscription in subscriptions)
-                        {
-                            MqttQualityOfServiceLevel qos = _subscriptions[subscription];
-                            qosLevels.Add(qos);
-                        }
-                    }
-                }
-
-                if (qosLevels.Count == 0)
-                {
-                    return new CheckSubscriptionsResult
-                    {
-                        IsSubscribed = false
-                    };
+                    MqttQualityOfServiceLevel qos = _subscriptions[subscription];
+                    qosLevels.Add(qos);
                 }
             }
+
+            if (qosLevels.Count == 0)
+            {
+                return new CheckSubscriptionsResult
+                {
+                    IsSubscribed = false
+                };
+            }
+
             return CreateSubscriptionResult(qosLevel, qosLevels);
         }
 

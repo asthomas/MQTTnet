@@ -100,10 +100,7 @@ namespace MQTTnet.Server
 
         public IEnumerable<string> GetAllTopics()
         {
-            lock (_messages)
-            {
-                return _messages.Values.Select(m => m.Topic).ToList();
-            }
+            return _messages.Values.Select(m => m.Topic);
         }
 
         public event EventHandler<string> NewTopicAdded;
